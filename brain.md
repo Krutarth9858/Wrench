@@ -1747,6 +1747,84 @@ via Profile → "Use my current location" → Save.
 
 ---
 
+## Phase 6A — AI troubleshooting foundation (COMPLETE)
+
+FR-06 is now **PARTIALLY IMPLEMENTED**: a customer can hold a diagnostic conversation and
+receive a structured preliminary assessment. **287 tests pass** (174 backend, 113 frontend).
+FR-07 (escalation / mechanic handoff) is **not** built — that is Phase 6B.
+
+### LLM boundary — `backend/app/services/llm.py`
+
+The **first and only** LLM abstraction in the project; there was none to reuse. Every model
+call goes through `get_llm()`, the single place a provider is constructed.
+
+| Setting | Default | Notes |
+|---|---|---|
+| `LLM_PROVIDER` | `stub` | `stub` \| `gemini` |
+| `LLM_API_KEY` | empty | required for a real provider |
+| `LLM_MODEL` | `gemini-2.0-flash` | |
+
+**`stub` is the shipped default**: deterministic, offline, no key. The app runs and the
+whole test suite passes without credentials or network. `GeminiProvider` uses Gemini's
+native JSON response mode (RAD §4 names Gemini/OpenAI). Another provider is one adapter
+implementing `LLMProvider` plus one branch in `get_llm()`.
+
+**No real-provider smoke test was run** — no key is configured in any environment. Provider
+errors never surface raw: status codes are logged, keys never are.
+
+### Data — migration 0007
+
+`diagnostic_sessions` (customer, `vehicle_type`, problem, status, plus the latest
+`severity` / `confidence` / `needs_mechanic` / `possible_causes` / `follow_up_questions`)
+and `diagnostic_messages` (session, `USER`/`ASSISTANT`, content, timestamp).
+**No saved Vehicle required** — the customer picks a type, as in booking.
+
+### API — customer only
+
+`POST /api/v1/diagnostics/` · `GET /api/v1/diagnostics/{id}` ·
+`POST /api/v1/diagnostics/{id}/messages`
+
+Sessions are private: another customer gets **404** (not 403, so ids are not confirmed),
+mechanics get 403, anonymous 401.
+
+### Safety boundaries
+
+`services/diagnostic_prompt.py` encodes RAD §7 — preliminary diagnosis only, never a
+substitute for physical inspection. The prompt forbids dangerous instructions (working
+under a raised vehicle, hot engines, fuel near ignition, bridging terminals, roadside
+repairs in traffic), requires stop-and-get-help for smoke/fire/leaks/brake or steering
+loss, and bans claims of certainty.
+
+**The model cannot act.** `ModelOutput` is a hard validation boundary: anything outside the
+shape is rejected and the turn fails with 503 rather than reaching the database or UI.
+Nothing in booking, mechanic matching, availability or authorization reads a diagnostic
+field. "Find a mechanic" is a plain navigation into the existing discovery flow —
+**verified in-browser that zero booking calls are made by the AI path**.
+
+### Customer UI — `components/dashboard/Troubleshoot.tsx`
+
+Route `/dashboard/troubleshoot`, nav item "Troubleshoot". Vehicle type → problem →
+conversation → assessment panel (possible causes, severity, confidence %, recommendation)
+→ **Find a mechanic** → `/dashboard/find`. Assessment only renders once the model has
+causes or flags `needs_mechanic`.
+
+### Known limitations
+
+- **Never exercised against a real model.** Every run so far used the stub or a mock; the
+  Gemini adapter is unverified end to end.
+- No streaming, so a slow provider blocks the turn behind a "thinking" state.
+- No conversation history list, no resume-by-URL: the session is lost on page reload
+  (persisted server-side, but the UI holds only the current one).
+- Sessions never reach `COMPLETED`; the status column exists but nothing sets it.
+- No rate limiting or token budget on diagnostic turns — a customer can loop indefinitely.
+- The safety prompt is instruction-only; there is no output-side safety classifier.
+
+### Next phase
+
+**6B — diagnostic escalation + mechanic handoff (FR-07).**
+
+---
+
 ## Instructions for Future Claude Sessions
 
 Before working on a task:
@@ -1769,8 +1847,88 @@ Additional standing cautions for this repo:
   August 2026 (`~/Downloads/Wrench Requirement Analysis Document.docx`). It is the product
   authority and is **not tracked in this repository** — read it before changing any
   requirement text here. Never edit the RAD to match the code.
-- **FR-01 (except OTP), FR-09, FR-02, FR-03, FR-05, FR-12 and FR-04 (status only, no
-  GPS tracking) are implemented (Phases 1-5).** The rest remain unbuilt. Do not infer a feature exists from
+- **FR-01 (except OTP), FR-09, FR-02, FR-03, FR-05, FR-12, FR-04 (status only) and FR-06
+  (conversation + structured result; no escalation) are implemented.** The rest remain
+  unbuilt. Do not infer a feature exists from
+  frontend marketing copy — `Chapter4.tsx` and `Landing.tsx` describe AI diagnostics,
+  nearby-mechanic search, and live tracking, **none of which exist in code**.
+- All API paths ARE served under `/api/v1` as of Phase 0. Health: `GET /api/v1/health`.
+- Frontend HTTP goes through `frontend/src/lib/api.ts` only. Never add a bare `fetch` to a component.
+the browser measured Send back at `y = 41` — unchanged. Moving the padding out means the
+scroll box *begins* at `y = 112` and clips anything above it.
+
+One shared fix for every dashboard route, mechanic and customer alike; no per-component
+z-index, no redesign.
+
+### Defect 2 — `PATCH /location` could still strand a profile at 0, 0
+
+The earlier Null Island guard was on `MechanicProfileCreate` only. `LocationUpdate` — the
+body of `PATCH /profile/mechanic/location` and `/profile/customer/location` — validated
+bounds and nothing else, so a mechanic could pass creation with real coordinates and then
+move to `(0, 0)` afterwards, silently invisible again.
+
+The rule now exists **once**, as `_reject_null_island()` in `app/schemas/profile.py`, and
+every write path calls it: `MechanicProfileCreate`, `MechanicProfileUpdate` (only when both
+coordinates are present, so partial updates still work) and `LocationUpdate`. Reads are
+still unguarded, so stranded profiles stay loadable and correctable.
+
+`find_nearby` was not touched. `distance_km <= service_radius_km` is unchanged, no mechanic
+is special-cased, and no second location system exists.
+
+### Validation
+
+Real browser run (agent-browser), servers live, against Postgres:
+
+| Check | Result |
+|---|---|
+| Send swept across every scroll offset, `/dashboard/troubleshoot` | 36 visible positions, **0 covered**; highest reach `y = 121` |
+| Real click on Send at that highest position | message sent, AI replied, input cleared |
+| All 26 visible controls swept, `/dashboard/find` | **0 covered by navbar** |
+| Mechanic profile → save `0, 0` | rejected, error shown, real coordinates preserved |
+| `PATCH /location` `0, 0` on live API | **422** |
+| New mechanic at 23.0725, 72.5714 → customer discovery | listed at **5.56 km**, BIKE **and** CAR |
+| Bike-only garages under a CAR search | correctly excluded |
+
+Regression tests, each proven to fail before the fix:
+`tests/api/test_mechanic_profile.py` (location endpoint rejects 0,0 / still accepts real
+coordinates) and `src/pages/Dashboard.test.tsx` (shell owns the scroll region, clearance on
+the clipping parent, navbar wrapper stays click-through).
+
+### Outstanding data
+
+**Two profiles remain at 0, 0** — `krish1223@gmail.com` ("krish") and "f automobiles". They
+stay invisible to discovery until their owners set a real location, which now takes one
+click via Profile → "Use my current location" → Save. No rows were modified;
+`krishna123@gmail.com` has since been corrected by its owner and now sits at
+23.128546, 72.565740.
+
+---
+
+## Instructions for Future Claude Sessions
+
+Before working on a task:
+
+1. Read brain.md.
+2. Identify the relevant subsystem.
+3. Use the Important Files map (§6).
+4. Inspect only the relevant files and direct dependencies.
+5. Do not scan the entire repository unless required.
+6. Treat actual source code as authoritative over brain.md.
+7. Update brain.md after meaningful architectural changes.
+8. Do not duplicate existing services/components.
+9. Do not guess when the repository can answer the question.
+
+Additional standing cautions for this repo:
+- Do not assume booking, AI, payments, maps, notifications, or realtime exist. They do not.
+- Do not trust the frontend as evidence of backend behavior — it is entirely mocked and its
+  data models disagree with the backend's.
+- Product requirements come from *"Wrench – Requirement Analysis Document"* v1.0,
+  August 2026 (`~/Downloads/Wrench Requirement Analysis Document.docx`). It is the product
+  authority and is **not tracked in this repository** — read it before changing any
+  requirement text here. Never edit the RAD to match the code.
+- **FR-01 (except OTP), FR-09, FR-02, FR-03, FR-05, FR-12, FR-04 (status only) and FR-06
+  (conversation + structured result; no escalation) are implemented.** The rest remain
+  unbuilt. Do not infer a feature exists from
   frontend marketing copy — `Chapter4.tsx` and `Landing.tsx` describe AI diagnostics,
   nearby-mechanic search, and live tracking, **none of which exist in code**.
 - All API paths ARE served under `/api/v1` as of Phase 0. Health: `GET /api/v1/health`.

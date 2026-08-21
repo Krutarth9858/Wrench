@@ -5,10 +5,11 @@ import { FloatingNavbar } from '../components/ui/FloatingNavbar';
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 import MechanicProfilePanel from '../components/dashboard/MechanicProfilePanel';
 import BookMechanic from '../components/dashboard/BookMechanic';
+import Troubleshoot from '../components/dashboard/Troubleshoot';
 import MyBookings from '../components/dashboard/MyBookings';
 import MechanicBookings from '../components/dashboard/MechanicBookings';
 import MechanicOverview from '../components/dashboard/MechanicOverview';
-import { User, MapPin, Wrench, SignOut, SquaresFour, Tray, Clock, ToggleRight } from '@phosphor-icons/react';
+import { User, MapPin, Wrench, SignOut, SquaresFour, Tray, Clock, ToggleRight, Sparkle } from '@phosphor-icons/react';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -32,20 +33,28 @@ const Dashboard: React.FC = () => {
       ]
     : [
         { name: 'My Profile', path: '/dashboard', icon: <User className="w-5 h-5" /> },
+        { name: 'Troubleshoot', path: '/dashboard/troubleshoot', icon: <Sparkle className="w-5 h-5" /> },
         { name: 'Book a Mechanic', path: '/dashboard/find', icon: <MapPin className="w-5 h-5" /> },
         { name: 'My Bookings', path: '/dashboard/bookings', icon: <Wrench className="w-5 h-5" /> },
       ];
 
 
   return (
-    <div className="bg-[#0A0A0B] min-h-screen text-white font-sans selection:bg-emerald-500/30">
+    <div className="bg-[#0A0A0B] h-screen overflow-hidden pt-28 text-white font-sans selection:bg-emerald-500/30">
       {/* Grayscale lineart grid — same treatment as the landing page's dark panels */}
       <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-t from-[#18181B] via-transparent to-[#18181B]"></div>
 
       <FloatingNavbar />
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
+      {/* Dashboard content scrolls inside its own region *below* the fixed navbar
+          rather than the window scrolling underneath it. Without this, any control
+          that scrolled into the navbar's band became unclickable — the navbar's own
+          pills legitimately own those pixels, so no z-index on the control can help.
+          The clearance is padding on the *clipping* parent, not on the scroll box:
+          padding inside a scroller scrolls away and stops clearing anything. */}
+      <div className="relative h-full overflow-y-auto pb-12">
+        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Sidebar */}
@@ -110,6 +119,7 @@ const Dashboard: React.FC = () => {
                 </>
               ) : (
                 <>
+                  <Route path="/troubleshoot" element={<Troubleshoot />} />
                   <Route path="/find" element={<BookMechanic />} />
                   <Route path="/bookings" element={<MyBookings />} />
                 </>
@@ -117,8 +127,9 @@ const Dashboard: React.FC = () => {
             </Routes>
           </section>
 
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { ArrowUpRight, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 
-interface FloatingNavbarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface FloatingNavbarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarProps>(
   ({ className, ...props }, ref) => {
@@ -55,7 +55,7 @@ export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarPro
               <span className="text-sm text-white/80 hidden md:block">
                 {user.email}
               </span>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors"
                 title="Log Out"

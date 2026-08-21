@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # LLM (RAD section 4). Defaults to an offline stub so the app runs and the
+    # test suite passes without credentials or network access.
+    LLM_PROVIDER: str = "stub"
+    LLM_API_KEY: str = ""
+    LLM_MODEL: str = "gemini-2.0-flash"
+
     # CORS: explicit origins only, never "*".
     # Declared as a plain string because pydantic-settings JSON-decodes complex
     # types from .env before validators run; `cors_origins` parses it instead.

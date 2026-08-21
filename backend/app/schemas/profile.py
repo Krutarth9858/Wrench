@@ -5,9 +5,28 @@ from uuid import UUID
 from app.models.vehicle import VehicleType
 import re
 
+NULL_ISLAND_ERROR = "Set a real garage location: 0, 0 is in the Atlantic Ocean."
+
+
+def _reject_null_island(latitude: float, longitude: float) -> None:
+    """(0, 0) passes the lat/lon bounds but sits in the Atlantic.
+
+    A profile stored there is silently invisible to discovery forever, because no
+    customer is ever inside its service radius. Treat the exact origin as "unset"
+    on every write path rather than only at creation.
+    """
+    if latitude == 0 and longitude == 0:
+        raise ValueError(NULL_ISLAND_ERROR)
+
+
 class LocationUpdate(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
+
+    @model_validator(mode="after")
+    def reject_null_island(self):
+        _reject_null_island(self.latitude, self.longitude)
+        return self
 
 class ImageUpdate(BaseModel):
     profile_image: HttpUrl
@@ -105,8 +124,7 @@ class MechanicProfileCreate(MechanicProfileBase):
         `MechanicProfileResponse` shares this base, and profiles already stored at
         0, 0 must remain readable so they can be corrected.
         """
-        if self.latitude == 0 and self.longitude == 0:
-            raise ValueError("Set a real garage location: 0, 0 is in the Atlantic Ocean.")
+        _reject_null_island(self.latitude, self.longitude)
         return self
 
 class MechanicProfileUpdate(BaseModel):
@@ -128,6 +146,12 @@ class MechanicProfileUpdate(BaseModel):
     working_start_time: Optional[str] = None
     working_end_time: Optional[str] = None
     is_available: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def reject_null_island(self):
+        if self.latitude is not None and self.longitude is not None:
+            _reject_null_island(self.latitude, self.longitude)
+        return self
 
     @field_validator("supported_vehicle_types")
     @classmethod

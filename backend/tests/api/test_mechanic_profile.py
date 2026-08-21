@@ -329,3 +329,37 @@ async def test_updating_the_profile_actually_moves_the_garage(client, mechanic_t
     # and it persisted, not just echoed back
     fetched = await client.get(f"{PREFIX}/", headers=auth(mechanic_token))
     assert fetched.json()["data"]["latitude"] == 19.0760
+
+
+@pytest.mark.asyncio
+async def test_the_location_endpoint_also_rejects_null_island(client, mechanic_token):
+    """Regression: the create-time guard left PATCH /location wide open.
+
+    A mechanic could pass creation with real coordinates and then strand the
+    profile at 0, 0 through the location endpoint, ending up invisible to
+    discovery with no error shown. Every write path shares one rule now.
+    """
+    await create_profile(client, mechanic_token, latitude=23.0225, longitude=72.5714)
+
+    stranded = await client.patch(
+        f"{PREFIX}/location", json={"latitude": 0, "longitude": 0},
+        headers=auth(mechanic_token),
+    )
+    assert stranded.status_code == 422
+    assert "0, 0" in stranded.text
+
+    # the real location survived the rejected write
+    fetched = await client.get(f"{PREFIX}/", headers=auth(mechanic_token))
+    assert fetched.json()["data"]["latitude"] == 23.0225
+
+
+@pytest.mark.asyncio
+async def test_the_location_endpoint_still_accepts_real_coordinates(client, mechanic_token):
+    await create_profile(client, mechanic_token)
+
+    moved = await client.patch(
+        f"{PREFIX}/location", json={"latitude": 19.0760, "longitude": 72.8777},
+        headers=auth(mechanic_token),
+    )
+    assert moved.status_code == 200
+    assert moved.json()["data"]["longitude"] == 72.8777
