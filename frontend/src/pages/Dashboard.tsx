@@ -4,10 +4,11 @@ import { useAuth } from '../lib/auth';
 import { FloatingNavbar } from '../components/ui/FloatingNavbar';
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 import MechanicProfilePanel from '../components/dashboard/MechanicProfilePanel';
-import FindMechanics from '../components/dashboard/FindMechanics';
+import BookMechanic from '../components/dashboard/BookMechanic';
 import MyBookings from '../components/dashboard/MyBookings';
 import MechanicBookings from '../components/dashboard/MechanicBookings';
-import { User, MapPin, Wrench, SignOut } from '@phosphor-icons/react';
+import MechanicOverview from '../components/dashboard/MechanicOverview';
+import { User, MapPin, Wrench, SignOut, SquaresFour, Tray, Clock, ToggleRight } from '@phosphor-icons/react';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -20,15 +21,21 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
-  const navItems = [
-    { name: 'My Profile', path: '/dashboard', icon: <User className="w-5 h-5" /> },
-    ...(isMechanic
-      ? [{ name: 'Bookings', path: '/dashboard/bookings', icon: <Wrench className="w-5 h-5" /> }]
-      : [
-          { name: 'Find Mechanics', path: '/dashboard/find', icon: <MapPin className="w-5 h-5" /> },
-          { name: 'My Bookings', path: '/dashboard/bookings', icon: <Wrench className="w-5 h-5" /> },
-        ]),
-  ];
+  const navItems = isMechanic
+    ? [
+        { name: 'Dashboard', path: '/dashboard', icon: <SquaresFour className="w-5 h-5" /> },
+        { name: 'Requests', path: '/dashboard/requests', icon: <Tray className="w-5 h-5" /> },
+        { name: 'Active Services', path: '/dashboard/active', icon: <Wrench className="w-5 h-5" /> },
+        { name: 'History', path: '/dashboard/history', icon: <Clock className="w-5 h-5" /> },
+        { name: 'Availability', path: '/dashboard/availability', icon: <ToggleRight className="w-5 h-5" /> },
+        { name: 'Profile', path: '/dashboard/profile', icon: <User className="w-5 h-5" /> },
+      ]
+    : [
+        { name: 'My Profile', path: '/dashboard', icon: <User className="w-5 h-5" /> },
+        { name: 'Book a Mechanic', path: '/dashboard/find', icon: <MapPin className="w-5 h-5" /> },
+        { name: 'My Bookings', path: '/dashboard/bookings', icon: <Wrench className="w-5 h-5" /> },
+      ];
+
 
   return (
     <div className="bg-[#0A0A0B] min-h-screen text-white font-sans selection:bg-emerald-500/30">
@@ -90,13 +97,23 @@ const Dashboard: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={isMechanic ? <MechanicProfilePanel /> : <ProfileSettings />}
+                element={isMechanic ? <MechanicOverview /> : <ProfileSettings />}
               />
-              <Route path="/find" element={<FindMechanics />} />
-              <Route
-                path="/bookings"
-                element={isMechanic ? <MechanicBookings /> : <MyBookings />}
-              />
+              {isMechanic ? (
+                <>
+                  <Route path="/requests" element={<MechanicBookings view="requests" />} />
+                  <Route path="/active" element={<MechanicBookings view="active" />} />
+                  <Route path="/history" element={<MechanicBookings view="history" />} />
+                  <Route path="/availability" element={<MechanicProfilePanel />} />
+                  <Route path="/profile" element={<MechanicProfilePanel />} />
+                  <Route path="/bookings" element={<MechanicBookings />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/find" element={<BookMechanic />} />
+                  <Route path="/bookings" element={<MyBookings />} />
+                </>
+              )}
             </Routes>
           </section>
 

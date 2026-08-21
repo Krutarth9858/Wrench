@@ -1523,6 +1523,230 @@ bookings persisted with `vehicle_type` and `vehicle_record=None`. Mechanic dashb
 
 ---
 
+## Customer booking UX — map-first redesign
+
+Replaced the list-only discovery + separate booking form with a single split-layout
+screen at `/dashboard/find` ("Book a Mechanic"). **222 tests pass** (147 backend,
+75 frontend). Backend unchanged — this was frontend-only.
+
+### Layout
+
+Desktop: booking/results panel on the left (400px, scrollable), map filling the rest.
+Mobile: map on top (45vh), panel beneath. Both stay visible together.
+
+### Progressive disclosure
+
+`location → vehicle type → problem → Find Mechanics → map+results → select → confirm →
+booking`. Each step only renders once the previous one is satisfied; "Find mechanics" stays
+disabled until location, type and a ≥5-character problem exist.
+
+### Map — `frontend/src/components/dashboard/MechanicMap.tsx`
+
+**Leaflet + OpenStreetMap tiles** (RAD section 4 names Mapbox/OSM; OSM needs no API key).
+`leaflet` is wrapped directly — `react-leaflet@5` requires React 19 and this project is on
+React 18, so adding it would have forced an unrelated upgrade. Only `leaflet` +
+`@types/leaflet` were added.
+
+Markers are emoji `divIcon`s (📍 customer, 🔧 mechanic), avoiding Leaflet's bundled image
+assets and any icon CDN. Selection is two-way: clicking a marker highlights its card and
+clicking a card highlights and pans to its marker. Results auto-fit via `fitBounds`.
+A `ResizeObserver` + `invalidateSize()` handles the container being laid out after map
+creation — without it only part of the viewport renders tiles.
+
+### Booking integration
+
+Reuses `lib/discovery.ts` and `lib/booking.ts` unchanged. **Backend stays authoritative**
+for availability, vehicle-type support, radius and distance; React does no matching.
+Selecting a mechanic never creates a booking — a confirmation panel (mechanic, vehicle
+type, problem, location, distance) gates `POST /bookings/`. On success the panel shows
+booking id, mechanic, vehicle type, problem and live status.
+
+Problem presets (Battery / Tyre / Engine / Fuel / Electrical / Other) only prefill the
+description textarea — no new field, no AI.
+
+### Files
+
+New: `BookMechanic.tsx`, `MechanicMap.tsx`, `BookMechanic.test.tsx` (16 tests).
+Removed as superseded: `FindMechanics.tsx`, `FindMechanics.test.tsx`, `BookService.tsx`
+(and the `BookService` block in `Bookings.test.tsx`). `Dashboard.tsx` routes
+`/dashboard/find` to the new screen; nav label is "Book a Mechanic".
+
+### E2E result — PASS
+
+Customer with **zero saved vehicles**: geolocation → two-wheeler → Tyre preset → 6 results
+with 7 markers (6 mechanics + customer pin) → clicked a map marker, which highlighted the
+matching card → Continue → confirmation panel with **no booking call yet** → confirmed →
+booking id + PENDING. Repeated with four-wheeler: 5 results, **bike-only garages correctly
+excluded**, booked successfully. Mobile at 375×812: map 365px tall above the panel, tiles
+loading, no horizontal overflow.
+
+### Discovery → dedicated booking route
+
+"Book Mechanic" on a result card **navigates** to **`/booking/:mechanicId`**
+(`BookingPage.tsx`), registered in `App.tsx` — **outside the dashboard shell**, so the
+account sidebar, marketing navbar and discovery map are all absent. The page renders its
+own full-width shell (Wrench wordmark left, Back right). Back returns to
+`/dashboard/find`.
+
+The discovery map is untouched by this split: geometry verified identical
+(top 112, left 744, 504x724) before search, after search, and after returning from
+booking.
+
+**Selected mechanic transfer.** The mechanic id lives in the URL and the mechanic itself
+is always re-fetched from **`GET /api/v1/mechanics/{profile_id}`** (new, customer-only,
+returns `MechanicSummary` — the discovery projection minus `distance_km`, which is
+relative to a search origin this endpoint does not take). The rest of the draft
+(vehicle type, problem, coordinates, address, distance) travels in router state and is
+mirrored to `sessionStorage` (`lib/bookingDraft.ts`) so a **refresh does not break** —
+verified in-browser. With no draft at all the page still resolves the mechanic and simply
+disables Confirm with a "location missing" note.
+
+Vehicle types the mechanic does not service are rendered disabled; the backend still
+re-validates. No saved vehicle is required anywhere in this flow.
+
+Backend change was one additive endpoint reusing `MechanicProfileRepository.get_by_id`;
+`NearbyMechanic` now extends `MechanicSummary`, so the discovery contract is unchanged.
+
+### Known limitations
+
+- **No manual address entry / geocoding.** Location comes only from browser geolocation;
+  the address field is a free-text landmark stored on the booking, not geocoded.
+- **No ETA** — the backend exposes none, and none was invented.
+- Rating shows only when `total_reviews > 0`; it is always 0 until reviews exist (Phase 8).
+- OSM tiles need public network access; there is no offline/basemap fallback and no tile
+  caching. Attribution is displayed as OSM requires.
+- The map is not virtualised — fine for the current `limit=50` discovery cap.
+- Changing vehicle type after searching requires searching again.
+
+---
+
+## Mechanic dashboard + customer ↔ mechanic flow
+
+**239 → 249 tests pass** (151 backend, 98 frontend). Both sides drive the *same* backend
+booking state; no new models, APIs, auth or state machine were introduced.
+
+### Mechanic navigation
+
+`Dashboard · Requests · Active Services · History · Availability · Profile`
+(`pages/Dashboard.tsx`, mechanic branch). Customers keep
+`My Profile · Book a Mechanic · My Bookings`.
+
+| Route | Component |
+|---|---|
+| `/dashboard` | `MechanicOverview.tsx` — pending / active / completed counts, availability switch, newest request |
+| `/dashboard/requests` | `MechanicBookings view="requests"` (PENDING) |
+| `/dashboard/active` | `MechanicBookings view="active"` (ACCEPTED + IN_PROGRESS) |
+| `/dashboard/history` | `MechanicBookings view="history"` (COMPLETED / CANCELLED / REJECTED) |
+| `/dashboard/availability`, `/dashboard/profile` | `MechanicProfilePanel.tsx` |
+
+`MechanicBookings` takes a `view` prop rather than being duplicated three times.
+`AvailabilityControl.tsx` was extracted so the profile page, availability page and
+overview all drive the **one** availability API — there is no second availability system.
+
+### Lifecycle (unchanged, canonical names kept)
+
+`PENDING → ACCEPTED | REJECTED`, `ACCEPTED → IN_PROGRESS`, `IN_PROGRESS → COMPLETED`,
+customer `CANCELLED` from PENDING or ACCEPTED. The spec's "ACTIVE" is this project's
+**`IN_PROGRESS`**; no state was added or renamed. `services/booking_state.py` remains the
+only place status changes, and every invalid transition returns **409**.
+
+### Role permissions (verified live, not just in React)
+
+| Action | Result |
+|---|---|
+| customer calls `/accept` | **403** |
+| mechanic acts on another mechanic's booking | **404** (not 403 — ids are not confirmed) |
+| assigned mechanic accepts | 200 |
+| complete before start | **409** |
+| book an unavailable mechanic | **409** + offline mechanic absent from discovery |
+| BIKE request to a CAR-only mechanic | **409** |
+
+### Development seed
+
+`backend/scripts/seed_dev.py` — creates three mechanics (bike-only, car-only, both) and a
+customer **with zero saved vehicles**, via the real API so signup validation and RBAC still
+apply. Emails are randomised; the shared password is printed. Replaces the ad-hoc scripts
+used previously.
+
+```
+./venv/bin/python -m scripts.seed_dev
+```
+
+### E2E result — PASS
+
+Zero-vehicle customer: login → find → select → book (two-wheeler) → **PENDING**.
+Mechanic: login → dashboard showed `1 pending / 0 active / 0 completed`, Available, and the
+newest request with customer, vehicle type, problem, location and time → Requests → accept
+→ Active Services → start → complete. Customer observed **ACCEPTED → IN_PROGRESS →
+COMPLETED** at each step. Dashboard counts then read `0 / 0 / 1`. Four-wheeler booking
+verified separately (201).
+
+### Realtime
+
+**Realtime updates were implemented in Phase 5** (WebSocket booking events, in-app
+notifications, REST resync on reconnect). Customer status therefore updates live *and*
+survives a manual refresh, since REST remains authoritative. This section previously said
+realtime was absent; that is no longer accurate.
+
+### Known limitations
+
+- Mechanic **Availability** and **Profile** render the same panel; availability is a card
+  inside the profile page rather than a dedicated screen.
+- Overview counts come from one `GET /bookings/` call and are computed client-side —
+  fine at current volume, but there is no aggregate endpoint.
+- No pagination on any mechanic list; `History` grows unbounded.
+- Realtime is single-process (in-memory connection manager) — see the Phase 5 section.
+
+---
+
+## Bug fix — mechanics invisible to discovery (Null Island + silent coordinate drop)
+
+A real mechanic (`krish1223@gmail.com`) showed **Available** but never appeared in customer
+discovery. Two independent defects, both now fixed. **257 tests pass** (156 backend,
+101 frontend).
+
+### Defect 1 — profile form defaulted to 0, 0
+
+`MechanicProfilePanel`'s empty form pre-filled `latitude: 0, longitude: 0`. Those are valid
+coordinates (Null Island, Atlantic Ocean) so both the schema bounds and the database
+accepted them. A mechanic who never touched the two bare number inputs saved a garage
+~8,228 km from every customer, permanently outside their own `service_radius_km`.
+Discovery was behaving correctly — the data was wrong.
+
+Fixed by making coordinates genuinely blank (`number | ''`) so `required` blocks
+submission, adding a **"Use my current location"** button that reuses the existing
+`getCurrentPosition()` from `lib/discovery.ts`, and rejecting exactly `(0, 0)` in
+`MechanicProfileCreate`.
+
+**The 0,0 guard is on write only.** `MechanicProfileResponse` shares `MechanicProfileBase`,
+so putting it on the base made an already-stranded profile fail to *load* — locking the
+mechanic out of the page needed to fix it. Regression-tested both directions.
+
+### Defect 2 — PUT silently discarded coordinate changes
+
+`MechanicProfileUpdate` had **no `latitude`/`longitude` fields**. `upsert_profile()` builds
+that model from the create payload, so on an existing profile the coordinates were dropped
+and `PUT /profile/mechanic/` returned **200 having changed nothing**. A mechanic could
+correct their location, see "Profile saved", and remain invisible.
+
+This is the defect that actually blocked recovery, and it made Defect 1 unfixable through
+the UI. Both fields added, with the same bounds. `CustomerProfileUpdate` had the identical
+omission and was fixed alongside it.
+
+### Verified end to end
+
+`save at 0,0 → 422` · `save real coords → 200, stored` · `move Ahmedabad → Mumbai → 200,
+stored 19.076` · `appears in discovery at 5.56 km`.
+
+### Outstanding data
+
+**Three existing profiles remain stranded at 0, 0** and are invisible until their owners
+set a real location (`krish1223@`, `krishna123@`, `krish123@`). No rows were modified —
+correcting a real garage's position is the owner's call. Each can now fix it in one click
+via Profile → "Use my current location" → Save.
+
+---
+
 ## Instructions for Future Claude Sessions
 
 Before working on a task:

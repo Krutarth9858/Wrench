@@ -1,17 +1,26 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../../lib/api';
+import { getCurrentPosition } from '../../lib/discovery';
+import AvailabilityControl from './AvailabilityControl';
 import {
   getAvailability,
   getMechanicProfile,
   saveMechanicProfile,
-  setAvailability,
   VEHICLE_TYPES,
   VEHICLE_TYPE_LABELS,
   type MechanicProfileInput,
   type VehicleType,
 } from '../../lib/mechanic';
 
-const EMPTY: MechanicProfileInput = {
+/** Form-local shape: coordinates may be blank until the mechanic sets them.
+ *  `0` is a real coordinate (Null Island), so it must not be the default —
+ *  a profile saved at 0,0 is invisible to discovery forever. */
+type FormState = Omit<MechanicProfileInput, 'latitude' | 'longitude'> & {
+  latitude: number | '';
+  longitude: number | '';
+};
+
+const EMPTY: FormState = {
   garage_name: '',
   owner_name: '',
   experience_years: 0,
@@ -22,8 +31,8 @@ const EMPTY: MechanicProfileInput = {
   city: '',
   state: '',
   country: '',
-  latitude: 0,
-  longitude: 0,
+  latitude: '',
+  longitude: '',
   service_radius_km: 10,
   working_start_time: '09:00',
   working_end_time: '18:00',
@@ -34,12 +43,12 @@ const FIELD =
 const LABEL = 'text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500';
 
 export default function MechanicProfilePanel() {
-  const [form, setForm] = useState<MechanicProfileInput>(EMPTY);
+  const [form, setForm] = useState<FormState>(EMPTY);
+  const [locating, setLocating] = useState(false);
   const [available, setAvailable] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [togglingAvailability, setTogglingAvailability] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -57,7 +66,7 @@ export default function MechanicProfilePanel() {
         completed_jobs, ...editable } = profile;
       void id; void user_id; void is_available; void is_verified; void average_rating;
       void total_reviews; void completed_jobs;
-      setForm(editable);
+      setForm(editable as FormState);
       setAvailable(availability.is_available);
       setHasProfile(true);
     } catch (err) {
@@ -76,7 +85,7 @@ export default function MechanicProfilePanel() {
     void load();
   }, [load]);
 
-  const update = <K extends keyof MechanicProfileInput>(key: K, value: MechanicProfileInput[K]) =>
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const toggleVehicleType = (type: VehicleType) =>
@@ -92,13 +101,39 @@ export default function MechanicProfilePanel() {
       };
     });
 
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setError('');
+    try {
+      const position = await getCurrentPosition();
+      setForm((prev) => ({
+        ...prev,
+        latitude: Number(position.latitude.toFixed(6)),
+        longitude: Number(position.longitude.toFixed(6)),
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not determine your location.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError('');
     setNotice('');
     try {
-      const saved = await saveMechanicProfile(form);
+      const { latitude, longitude } = form;
+      if (latitude === '' || longitude === '') {
+        setError('Set your garage location — customers are matched by distance from it.');
+        return;
+      }
+      if (latitude === 0 && longitude === 0) {
+        setError('0, 0 is in the Atlantic Ocean. Set your real garage location.');
+        return;
+      }
+      const saved = await saveMechanicProfile({ ...form, latitude, longitude });
       setAvailable(saved.is_available);
       setHasProfile(true);
       setNotice('Profile saved.');
@@ -107,20 +142,6 @@ export default function MechanicProfilePanel() {
       setError(err instanceof Error ? err.message : 'Could not save your profile.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleAvailability = async () => {
-    const next = !available;
-    setTogglingAvailability(true);
-    setError('');
-    try {
-      const result = await setAvailability(next);
-      setAvailable(result.is_available); // trust the backend, not the optimistic value
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update availability.');
-    } finally {
-      setTogglingAvailability(false);
     }
   };
 
@@ -147,42 +168,13 @@ export default function MechanicProfilePanel() {
           : 'Set up your garage profile so customers can find you.'}
       </p>
 
-      {/* Availability */}
-      <div className="mb-8 flex items-center justify-between gap-6 rounded-2xl border border-white/10 bg-white/5 p-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span
-              data-testid="availability-dot"
-              className={`w-2 h-2 rounded-full ${available ? 'bg-emerald-400' : 'bg-zinc-500'}`}
-            />
-            <span data-testid="availability-label" className="text-white font-medium">
-              {available ? 'Available' : 'Unavailable'}
-            </span>
-          </div>
-          <p className="text-zinc-500 text-sm font-light mt-1">
-            {hasProfile
-              ? 'Customers can only be matched with you while you are available.'
-              : 'Save your profile first to control availability.'}
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={available}
-          aria-label="Toggle availability"
-          data-testid="availability-toggle"
-          disabled={!hasProfile || togglingAvailability}
-          onClick={handleAvailability}
-          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-            available ? 'bg-emerald-500' : 'bg-white/10'
-          }`}
-        >
-          <span
-            className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${
-              available ? 'translate-x-7' : 'translate-x-1'
-            }`}
-          />
-        </button>
+      <div className="mb-8">
+        <AvailabilityControl
+          available={available}
+          enabled={hasProfile}
+          onChange={setAvailable}
+          onError={setError}
+        />
       </div>
 
       {error && (
@@ -296,17 +288,33 @@ export default function MechanicProfilePanel() {
             <input name="country" required value={form.country}
               onChange={(e) => update('country', e.target.value)} className={FIELD} />
           </label>
+          <div className="md:col-span-2 space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <span className={LABEL}>Garage location</span>
+              <button type="button" onClick={useCurrentLocation} disabled={locating}
+                data-testid="use-my-location"
+                className="h-9 px-4 rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 text-sm hover:text-white disabled:opacity-50">
+                {locating ? 'Getting location…' : '📍 Use my current location'}
+              </button>
+            </div>
+            <p className="text-zinc-600 text-xs">
+              Customers only see you if their breakdown is within your service radius of this
+              point, so it must be your real location.
+            </p>
+          </div>
           <label className="space-y-2 block">
             <span className={LABEL}>Latitude</span>
             <input name="latitude" type="number" step="any" min={-90} max={90} required
-              value={form.latitude}
-              onChange={(e) => update('latitude', Number(e.target.value))} className={FIELD} />
+              value={form.latitude} placeholder="e.g. 23.0225"
+              onChange={(e) => update('latitude', e.target.value === '' ? '' : Number(e.target.value))}
+              className={FIELD} />
           </label>
           <label className="space-y-2 block">
             <span className={LABEL}>Longitude</span>
             <input name="longitude" type="number" step="any" min={-180} max={180} required
-              value={form.longitude}
-              onChange={(e) => update('longitude', Number(e.target.value))} className={FIELD} />
+              value={form.longitude} placeholder="e.g. 72.5714"
+              onChange={(e) => update('longitude', e.target.value === '' ? '' : Number(e.target.value))}
+              className={FIELD} />
           </label>
         </div>
 

@@ -4,7 +4,9 @@ Read-only. Selecting a mechanic is a client-side concern; nothing here creates a
 booking, which is Phase 4.
 """
 
-from fastapi import APIRouter, Depends, Query
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_customer
@@ -12,7 +14,7 @@ from app.db.repositories.profile import MechanicProfileRepository
 from app.db.session import get_db
 from app.models.user import User
 from app.models.vehicle import VehicleType
-from app.schemas.profile import NearbyMechanic, NearbyMechanicList
+from app.schemas.profile import MechanicSummary, NearbyMechanic, NearbyMechanicList
 from app.schemas.response import ResponseModel
 from app.services.profile import MechanicProfileService
 
@@ -55,3 +57,21 @@ async def find_nearby_mechanics(
         for profile, distance in matches
     ]
     return ResponseModel(data=NearbyMechanicList(mechanics=mechanics))
+
+
+@router.get("/{profile_id}", response_model=ResponseModel[MechanicSummary])
+async def get_mechanic(
+    profile_id: UUID,
+    _customer: User = Depends(get_current_customer),
+    service: MechanicProfileService = Depends(get_profile_service),
+):
+    """Fetch one mechanic by public profile id.
+
+    Lets the booking page rebuild its selected mechanic after a page refresh
+    instead of depending on router state. No distance: that is relative to a
+    search origin, which this endpoint does not take.
+    """
+    profile = await service.profile_repo.get_by_id(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Mechanic not found")
+    return ResponseModel(data=MechanicSummary.model_validate(profile))

@@ -255,3 +255,77 @@ async def test_a_mechanic_only_ever_touches_their_own_profile(client, mechanic_u
     mine = await client.get(f"{PREFIX}/", headers=auth(mechanic_token))
     assert mine.json()["data"]["garage_name"] == "Mine"
     assert mine.json()["data"]["is_available"] is True  # unaffected by the other mechanic
+
+
+# ----------------------------------------------------------------- location sanity
+
+@pytest.mark.asyncio
+async def test_a_profile_cannot_be_saved_at_null_island(client, mechanic_token):
+    """Regression: 0,0 passes the lat/lon bounds but is 8000 km from anywhere real.
+
+    A mechanic saved there is permanently invisible to discovery, which is how a
+    real account ended up unreachable while showing "Available".
+    """
+    res = await create_profile(client, mechanic_token, latitude=0, longitude=0)
+    assert res.status_code == 422
+    assert "0, 0" in res.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("coords", [(0.0, 72.5714), (23.0225, 0.0)])
+async def test_a_single_zero_coordinate_is_still_valid(client, mechanic_token, coords):
+    """Only the exact 0,0 pair is rejected — the equator and prime meridian are real."""
+    latitude, longitude = coords
+    res = await create_profile(client, mechanic_token, latitude=latitude, longitude=longitude)
+    assert res.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_an_existing_null_island_profile_can_still_be_read_and_corrected(
+    client, mechanic_user, mechanic_token
+):
+    """The guard is write-only on purpose.
+
+    Profiles already stored at 0, 0 must stay readable, otherwise the mechanic
+    cannot open the profile page to fix the coordinates that made them invisible.
+    """
+    from sqlalchemy import update
+    from app.db.session import AsyncSessionLocal
+    from app.models.profile import MechanicProfile
+
+    await create_profile(client, mechanic_token)
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            update(MechanicProfile)
+            .where(MechanicProfile.user_id == mechanic_user.id)
+            .values(latitude=0, longitude=0)
+        )
+        await session.commit()
+
+    read = await client.get(f"{PREFIX}/", headers=auth(mechanic_token))
+    assert read.status_code == 200
+    assert read.json()["data"]["latitude"] == 0
+
+    fixed = await create_profile(client, mechanic_token, latitude=23.0225, longitude=72.5714)
+    assert fixed.status_code == 200
+    assert fixed.json()["data"]["latitude"] == 23.0225
+
+
+@pytest.mark.asyncio
+async def test_updating_the_profile_actually_moves_the_garage(client, mechanic_token):
+    """Regression: PUT returned 200 while silently discarding coordinate changes.
+
+    MechanicProfileUpdate omitted latitude/longitude, so upsert_profile() dropped
+    them — a mechanic could never correct a wrong location through the profile
+    form, which is what left a real account invisible to discovery.
+    """
+    await create_profile(client, mechanic_token, latitude=23.0225, longitude=72.5714)
+
+    moved = await create_profile(client, mechanic_token, latitude=19.0760, longitude=72.8777)
+    assert moved.status_code == 200
+    assert moved.json()["data"]["latitude"] == 19.0760
+    assert moved.json()["data"]["longitude"] == 72.8777
+
+    # and it persisted, not just echoed back
+    fetched = await client.get(f"{PREFIX}/", headers=auth(mechanic_token))
+    assert fetched.json()["data"]["latitude"] == 19.0760

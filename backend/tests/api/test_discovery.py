@@ -238,3 +238,43 @@ async def test_discovery_is_a_customer_capability(client, mechanic_token, admin_
     assert (await search(client, mechanic_token)).status_code == 403
     admin_token = create_access_token(subject=str(admin_user.id))
     assert (await search(client, admin_token)).status_code == 403
+
+
+# ------------------------------------------------------------------ detail endpoint
+
+@pytest.mark.asyncio
+async def test_a_mechanic_can_be_fetched_by_id(client, customer_token):
+    """Supports rebuilding the booking page's selected mechanic after a refresh."""
+    profile = await make_mechanic("detail@e.com", NEAR)
+    res = await client.get(f"/api/v1/mechanics/{profile.id}", headers=auth(customer_token))
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["id"] == str(profile.id)
+    assert data["garage_name"] == "Garage detail"
+    assert data["supported_vehicle_types"] == ["CAR"]
+    # Distance is relative to a search origin, which this endpoint does not take.
+    assert "distance_km" not in data
+
+
+@pytest.mark.asyncio
+async def test_mechanic_detail_withholds_private_fields(client, customer_token):
+    profile = await make_mechanic("detailpriv@e.com", NEAR)
+    body = (await client.get(f"/api/v1/mechanics/{profile.id}",
+                             headers=auth(customer_token))).text
+    for leaked in ("owner_name", "address", "working_start_time", "user_id", "phone_number"):
+        assert leaked not in body, leaked
+
+
+@pytest.mark.asyncio
+async def test_unknown_mechanic_id_is_404(client, customer_token):
+    from uuid import uuid4
+    res = await client.get(f"/api/v1/mechanics/{uuid4()}", headers=auth(customer_token))
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_mechanic_detail_requires_a_customer(client, mechanic_token):
+    profile = await make_mechanic("detailrbac@e.com", NEAR)
+    assert (await client.get(f"/api/v1/mechanics/{profile.id}")).status_code == 401
+    assert (await client.get(f"/api/v1/mechanics/{profile.id}",
+                             headers=auth(mechanic_token))).status_code == 403

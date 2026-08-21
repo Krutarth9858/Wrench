@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, Field, ConfigDict, field_validator
+from pydantic import BaseModel, HttpUrl, Field, ConfigDict, field_validator, model_validator
 from typing import Optional, List
 from uuid import UUID
 
@@ -47,6 +47,8 @@ class CustomerProfileUpdate(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
 
     @field_validator("phone_number", "emergency_contact_number")
     @classmethod
@@ -94,7 +96,18 @@ class MechanicProfileBase(BaseModel):
         return v
 
 class MechanicProfileCreate(MechanicProfileBase):
-    pass
+    @model_validator(mode="after")
+    def reject_null_island(self):
+        """(0, 0) passes the lat/lon bounds but sits in the Atlantic.
+
+        A mechanic saved there is silently invisible to discovery forever, since
+        no customer is ever inside their service radius. Rejected on write only:
+        `MechanicProfileResponse` shares this base, and profiles already stored at
+        0, 0 must remain readable so they can be corrected.
+        """
+        if self.latitude == 0 and self.longitude == 0:
+            raise ValueError("Set a real garage location: 0, 0 is in the Atlantic Ocean.")
+        return self
 
 class MechanicProfileUpdate(BaseModel):
     garage_name: Optional[str] = None
@@ -107,6 +120,10 @@ class MechanicProfileUpdate(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
+    # Without these, upsert_profile() silently discards coordinate changes and
+    # still returns 200, leaving a mechanic stranded wherever they first saved.
+    latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
     service_radius_km: Optional[float] = Field(None, gt=0.0)
     working_start_time: Optional[str] = None
     working_end_time: Optional[str] = None
@@ -150,11 +167,11 @@ class AvailabilityResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class NearbyMechanic(BaseModel):
-    """Public projection of a mechanic for discovery (FR-02).
+class MechanicSummary(BaseModel):
+    """Public projection of a mechanic (FR-02).
 
     Deliberately omits the street address, owner name, phone and working hours:
-    a customer choosing a mechanic needs identity, coverage and distance only.
+    a customer choosing a mechanic needs identity, coverage and location only.
     """
 
     id: UUID
@@ -163,7 +180,6 @@ class NearbyMechanic(BaseModel):
     city: str
     latitude: float
     longitude: float
-    distance_km: float
     supported_vehicle_types: List[VehicleType]
     is_available: bool
     service_radius_km: float
@@ -172,6 +188,12 @@ class NearbyMechanic(BaseModel):
     total_reviews: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class NearbyMechanic(MechanicSummary):
+    """A summary plus how far it is from the requesting customer."""
+
+    distance_km: float
 
 
 class NearbyMechanicList(BaseModel):

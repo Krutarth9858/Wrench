@@ -16,7 +16,16 @@ const ACTIONS: Partial<Record<BookingStatus, { action: 'accept' | 'reject' | 'st
   IN_PROGRESS: [{ action: 'complete', label: 'Mark complete', tone: 'bg-emerald-500 text-zinc-950' }],
 };
 
-export default function MechanicBookings() {
+type View = 'all' | 'requests' | 'active' | 'history';
+
+const TITLES: Record<View, string> = {
+  all: 'Booking requests',
+  requests: 'Incoming requests',
+  active: 'Active services',
+  history: 'History',
+};
+
+export default function MechanicBookings({ view = 'all' }: { view?: View }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
@@ -54,6 +63,7 @@ export default function MechanicBookings() {
     }
   };
 
+  const show = (section: View) => view === 'all' || view === section;
   const incoming = bookings.filter((b) => b.status === 'PENDING');
   const active = bookings.filter((b) => b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS');
   const past = bookings.filter((b) =>
@@ -112,7 +122,7 @@ export default function MechanicBookings() {
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-3 block">
             Dispatch
           </span>
-          <h2 className="text-2xl font-semibold text-white tracking-tight">Booking requests</h2>
+          <h2 className="text-2xl font-semibold text-white tracking-tight">{TITLES[view]}</h2>
         </div>
         <div className="flex items-center gap-3">
         <button
@@ -145,16 +155,21 @@ export default function MechanicBookings() {
         </div>
       )}
 
-      {bookings.length === 0 && (
+      {(view === 'all' ? bookings.length === 0
+        : (view === 'requests' ? incoming : view === 'active' ? active : past).length === 0) && (
         <div data-testid="jobs-empty" className="p-6 rounded-2xl border border-white/10 bg-white/5 text-zinc-400 text-sm">
-          No booking requests yet. Make sure you are marked available.
+          {view === 'active'
+            ? 'No active services right now.'
+            : view === 'history'
+              ? 'No completed or closed bookings yet.'
+              : 'No booking requests yet. Make sure you are marked available.'}
         </div>
       )}
 
       {[
-        ['Incoming requests', incoming, 'incoming'],
-        ['Active service', active, 'active'],
-        ['History', past, 'past'],
+        ['Incoming requests', show('requests') ? incoming : [], 'incoming'],
+        ['Active service', show('active') ? active : [], 'active'],
+        ['History', show('history') ? past : [], 'past'],
       ].map(([title, list, key]) =>
         (list as Booking[]).length > 0 ? (
           <section key={key as string} className="mb-8">

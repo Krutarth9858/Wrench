@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MechanicProfilePanel from './MechanicProfilePanel';
 import { ApiError } from '../../lib/api';
 import * as mechanic from '../../lib/mechanic';
+import * as discovery from '../../lib/discovery';
+
+vi.mock('../../lib/discovery', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/discovery')>('../../lib/discovery');
+  return { ...actual, getCurrentPosition: vi.fn() };
+});
 
 vi.mock('../../lib/mechanic', async () => {
   const actual = await vi.importActual<typeof import('../../lib/mechanic')>('../../lib/mechanic');
@@ -35,6 +41,46 @@ describe('MechanicProfilePanel', () => {
     vi.mocked(mechanic.setAvailability).mockImplementation(async (v) => ({ is_available: v }));
   });
   afterEach(() => vi.clearAllMocks());
+
+  it('starts a new profile with no location rather than 0,0', async () => {
+    // Regression: 0,0 defaults silently produced mechanics invisible to discovery.
+    vi.mocked(mechanic.getMechanicProfile).mockRejectedValue(new ApiError(404, null, 'Not found'));
+    vi.mocked(mechanic.getAvailability).mockRejectedValue(new ApiError(404, null, 'Not found'));
+    render(<MechanicProfilePanel />);
+    await waitFor(() => expect(screen.getByTestId('use-my-location')).toBeInTheDocument());
+    const lat = document.querySelector('input[name="latitude"]') as HTMLInputElement;
+    const lon = document.querySelector('input[name="longitude"]') as HTMLInputElement;
+    expect(lat.value).toBe('');
+    expect(lon.value).toBe('');
+  });
+
+  it('fills the location from the browser', async () => {
+    const user = userEvent.setup();
+    vi.mocked(discovery.getCurrentPosition).mockResolvedValue({ latitude: 23.0225, longitude: 72.5714 });
+    render(<MechanicProfilePanel />);
+    await waitFor(() => expect(screen.getByTestId('use-my-location')).toBeInTheDocument());
+
+    await user.click(screen.getByTestId('use-my-location'));
+
+    await waitFor(() =>
+      expect((document.querySelector('input[name="latitude"]') as HTMLInputElement).value).toBe('23.0225'));
+    expect((document.querySelector('input[name="longitude"]') as HTMLInputElement).value).toBe('72.5714');
+  });
+
+  it('refuses to save a profile pinned at 0,0', async () => {
+    const user = userEvent.setup();
+    render(<MechanicProfilePanel />);
+    await waitFor(() => expect(screen.getByTestId('save-profile')).toBeEnabled());
+    const lat = document.querySelector('input[name="latitude"]') as HTMLInputElement;
+    const lon = document.querySelector('input[name="longitude"]') as HTMLInputElement;
+    await user.clear(lat); await user.type(lat, '0');
+    await user.clear(lon); await user.type(lon, '0');
+
+    await user.click(screen.getByTestId('save-profile'));
+
+    await waitFor(() => expect(screen.getByTestId('mechanic-error')).toHaveTextContent('Atlantic'));
+    expect(mechanic.saveMechanicProfile).not.toHaveBeenCalled();
+  });
 
   it('shows a loading state before the profile arrives', () => {
     render(<MechanicProfilePanel />);

@@ -2,20 +2,24 @@
 import { apiFetchData } from './api';
 import type { VehicleType } from './mechanic';
 
-export interface NearbyMechanic {
+/** A mechanic without a distance — what `GET /mechanics/{id}` returns. */
+export interface MechanicSummary {
   id: string;
   garage_name: string;
   specialization: string;
   city: string;
   latitude: number;
   longitude: number;
-  distance_km: number;
   supported_vehicle_types: VehicleType[];
   is_available: boolean;
   service_radius_km: number;
   experience_years: number;
   average_rating: number;
   total_reviews: number;
+}
+
+export interface NearbyMechanic extends MechanicSummary {
+  distance_km: number;
 }
 
 export interface Coordinates {
@@ -36,6 +40,11 @@ export async function findNearbyMechanics(
     `/mechanics/nearby?${query.toString()}`,
   );
   return result.mechanics;
+}
+
+/** Fetch one mechanic by id. Used to rebuild booking state after a page refresh. */
+export function getMechanic(id: string): Promise<MechanicSummary> {
+  return apiFetchData<MechanicSummary>(`/mechanics/${id}`);
 }
 
 /** Wraps the callback-based Geolocation API and maps its errors to messages. */

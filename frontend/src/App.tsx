@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import BookingPage from './components/dashboard/BookingPage';
 import BackendStatus from './components/dev/BackendStatus';
 import { Toaster } from 'sonner';
 
@@ -63,6 +64,16 @@ const App: React.FC = () => {
             <PublicOnly>
               <Register />
             </PublicOnly>
+          }
+        />
+        {/* Full-page booking screen: deliberately outside the dashboard shell so
+            no sidebar or map is rendered beside it. */}
+        <Route
+          path="/booking/:mechanicId"
+          element={
+            <RequireAuth>
+              <BookingPage />
+            </RequireAuth>
           }
         />
         <Route
