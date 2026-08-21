@@ -16,7 +16,7 @@ async def test_customer_profile_creation(client, customer_token):
         "longitude": -89.6501
     }
     
-    response = client.put("/api/v1/profile/customer/", json=payload, headers=headers)
+    response = await client.put("/api/v1/profile/customer/", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["full_name"] == "John Doe"
@@ -25,7 +25,7 @@ async def test_customer_profile_creation(client, customer_token):
 @pytest.mark.asyncio
 async def test_customer_forbidden_for_mechanic(client, mechanic_token):
     headers = {"Authorization": f"Bearer {mechanic_token}"}
-    response = client.get("/api/v1/profile/customer/", headers=headers)
+    response = await client.get("/api/v1/profile/customer/", headers=headers)
     assert response.status_code == 403
 
 @pytest.mark.asyncio
@@ -36,7 +36,9 @@ async def test_mechanic_profile_creation(client, mechanic_token):
         "owner_name": "Mike Smith",
         "experience_years": 10,
         "specialization": "Engine Repair",
-        "supported_vehicle_types": ["Car", "Truck"],
+        # Canonical VehicleType values. "Truck" was removed in Phase 2: RAD section 3
+        # limits scope to two- and four-wheelers and excludes heavy commercial vehicles.
+        "supported_vehicle_types": ["CAR", "BIKE"],
         "address": "456 Auto Blvd",
         "city": "Springfield",
         "state": "IL",
@@ -48,23 +50,23 @@ async def test_mechanic_profile_creation(client, mechanic_token):
         "working_end_time": "18:00"
     }
     
-    response = client.put("/api/v1/profile/mechanic/", json=payload, headers=headers)
+    response = await client.put("/api/v1/profile/mechanic/", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["garage_name"] == "Speedy Auto"
-    assert data["supported_vehicle_types"] == ["Car", "Truck"]
+    assert data["supported_vehicle_types"] == ["CAR", "BIKE"]
 
 @pytest.mark.asyncio
 async def test_mechanic_forbidden_for_customer(client, customer_token):
     headers = {"Authorization": f"Bearer {customer_token}"}
-    response = client.get("/api/v1/profile/mechanic/", headers=headers)
+    response = await client.get("/api/v1/profile/mechanic/", headers=headers)
     assert response.status_code == 403
 
 @pytest.mark.asyncio
 async def test_customer_location_update(client, customer_token):
     headers = {"Authorization": f"Bearer {customer_token}"}
     # Ensure profile exists first
-    client.put("/api/v1/profile/customer/", json={
+    await client.put("/api/v1/profile/customer/", json={
         "full_name": "Location Tester",
         "phone_number": "+11234567890",
         "emergency_contact_name": "Jane",
@@ -81,7 +83,7 @@ async def test_customer_location_update(client, customer_token):
         "latitude": 40.0,
         "longitude": -90.0
     }
-    response = client.patch("/api/v1/profile/customer/location", json=payload, headers=headers)
+    response = await client.patch("/api/v1/profile/customer/location", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["latitude"] == 40.0
@@ -89,9 +91,8 @@ async def test_customer_location_update(client, customer_token):
 
 @pytest.mark.asyncio
 async def test_404_profile_not_found(client, customer_token):
-    # Use a fresh user that has no profile
+    # Every table is truncated before each test (tests/conftest.py::_clean_tables),
+    # so this customer genuinely has no profile yet.
     headers = {"Authorization": f"Bearer {customer_token}"}
-    
-    # Actually customer_token reuses the customer_user fixture which already has a profile 
-    # created in the previous tests because the DB isn't wiped between tests.
-    pass # Re-evaluate this test in isolation if needed, but it's enough for QA coverage
+    response = await client.get("/api/v1/profile/customer/", headers=headers)
+    assert response.status_code == 404

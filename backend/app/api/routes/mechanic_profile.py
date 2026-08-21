@@ -3,7 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.db.repositories.profile import MechanicProfileRepository
 from app.services.profile import MechanicProfileService
-from app.schemas.profile import MechanicProfileCreate, MechanicProfileUpdate, MechanicProfileResponse, LocationUpdate
+from app.schemas.profile import (
+    AvailabilityResponse,
+    AvailabilityUpdate,
+    LocationUpdate,
+    MechanicProfileCreate,
+    MechanicProfileResponse,
+    MechanicProfileUpdate,
+)
 from app.schemas.response import ResponseModel
 from app.api.deps import get_current_mechanic
 from app.models.user import User
@@ -46,4 +53,31 @@ async def update_my_location(
     return ResponseModel(
         message="Location updated successfully",
         data=MechanicProfileResponse.model_validate(profile)
+    )
+
+
+@router.get("/availability", response_model=ResponseModel[AvailabilityResponse])
+async def get_my_availability(
+    current_user: User = Depends(get_current_mechanic),
+    service: MechanicProfileService = Depends(get_profile_service)
+):
+    is_available = await service.get_availability(str(current_user.id))
+    return ResponseModel(data=AvailabilityResponse(is_available=is_available))
+
+
+@router.patch("/availability", response_model=ResponseModel[AvailabilityResponse])
+async def set_my_availability(
+    availability_in: AvailabilityUpdate,
+    current_user: User = Depends(get_current_mechanic),
+    service: MechanicProfileService = Depends(get_profile_service)
+):
+    """Only the authenticated mechanic can change their own availability.
+
+    The user id comes from the bearer token, never from the request body, so
+    there is no path to toggling another mechanic's state.
+    """
+    profile = await service.set_availability(str(current_user.id), availability_in.is_available)
+    return ResponseModel(
+        message="Availability updated successfully",
+        data=AvailabilityResponse(is_available=profile.is_available),
     )

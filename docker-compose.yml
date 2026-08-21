@@ -24,6 +24,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/wrench
+      # Required. Compose fails fast if SECRET_KEY is not set in the environment
+      # or in a local .env file; there is deliberately no default.
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set (see backend/.env.example)}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:5173}
     depends_on:
       - db
 

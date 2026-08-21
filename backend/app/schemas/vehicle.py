@@ -1,4 +1,5 @@
 from typing import Optional, List
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 from app.models.vehicle import VehicleType, FuelType
 
@@ -22,8 +23,8 @@ class VehicleUpdate(BaseModel):
     nickname: Optional[str] = Field(None, max_length=50)
 
 class VehicleResponse(VehicleBase):
-    id: str
-    user_id: str
+    id: UUID
+    user_id: UUID
     is_default: bool
     
     model_config = ConfigDict(from_attributes=True)

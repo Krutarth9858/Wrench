@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -14,7 +14,7 @@ const Chapter6: React.FC = () => {
     const ctx = gsap.context(() => {
       const cards = [card1Ref.current, card2Ref.current, card3Ref.current];
 
-      cards.forEach((card, i) => {
+      cards.forEach((card) => {
         gsap.fromTo(
           card,
           { opacity: 0, y: 100 },

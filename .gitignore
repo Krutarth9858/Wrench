@@ -1,0 +1,66 @@
+# ---------------------------------------------------------------
+# Wrench — repository ignores
+# Entries reflect artifacts actually produced by this repo's tooling.
+# ---------------------------------------------------------------
+
+# Node dependencies
+# Both the root package.json and frontend/package.json install here.
+node_modules/
+
+# Python virtualenv
+# backend/venv exists locally (python3.14). Never commit an interpreter.
+venv/
+.venv/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Secrets and local environment overrides
+# backend/.env.example is the committed template and must stay tracked.
+.env
+.env.*
+!.env.example
+
+# Build output
+# `npm run build` (frontend/package.json) emits frontend/dist.
+dist/
+build/
+
+# Bundle analysis
+# rollup-plugin-visualizer writes this on every build (frontend/vite.config.ts).
+analyse.html
+stats.html
+
+# Test coverage
+# vitest (frontend/vitest.config.ts)
+coverage/
+*.lcov
+
+# Vite local caches / timestamp shims
+.vite/
+*.local
+vite.config.ts.timestamp-*
+vitest.config.ts.timestamp-*
+
+# Agent workspace scratch
+# CLAUDE.md: ".tmp/ — All intermediate files. Never commit, always regenerated."
+.tmp/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp

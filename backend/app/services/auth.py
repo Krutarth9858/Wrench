@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from app.db.repositories.user import UserRepository
 from app.db.repositories.token import TokenRepository
 from app.schemas.user import UserCreate, UserLogin
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.token import RefreshToken
 from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_token
 from app.core.config import settings
@@ -25,6 +25,7 @@ class AuthService:
             email=user_in.email,
             phone_number=user_in.phone_number,
             hashed_password=get_password_hash(user_in.password),
+            role=UserRole(user_in.role),
         )
         return await self.user_repo.create(user)
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Car, Plus, Star, DotsThree, Trash, PencilSimple } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { Car, Plus, Star, Trash, PencilSimple } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import VehicleModal from './VehicleModal';
 import SpecularButton from '../ui/SpecularButton';
@@ -85,7 +85,7 @@ export default function VehicleManager() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/[0.02] backdrop-blur-[40px] rounded-[32px] p-8 border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] profile-anim">
+      <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5 shadow-[0_0_80px_rgba(0,0,0,0.5)] profile-anim">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-semibold text-white tracking-tight">My Vehicles</h2>

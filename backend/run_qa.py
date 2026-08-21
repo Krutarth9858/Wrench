@@ -4,12 +4,12 @@ import urllib.request
 import urllib.error
 import json
 
-from app.db.session import async_session
+from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
 from app.core.security import get_password_hash, create_access_token
 
 async def seed_users():
-    async with async_session() as session:
+    async with AsyncSessionLocal() as session:
         customer = User(
             email=f"cust_{uuid.uuid4().hex[:8]}@example.com",
             phone_number=f"+1{uuid.uuid4().int % 10000000000:010d}",

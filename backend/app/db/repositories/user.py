@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
+from typing import List, Optional
 from app.models.user import User
 
 class UserRepository:
@@ -18,6 +18,12 @@ class UserRepository:
     async def get_by_id(self, user_id: str) -> Optional[User]:
         result = await self.session.execute(select(User).where(User.id == user_id))
         return result.scalars().first()
+
+    async def list_all(self, limit: int = 100) -> List[User]:
+        result = await self.session.execute(
+            select(User).order_by(User.created_at.desc()).limit(limit)
+        )
+        return list(result.scalars().all())
 
     async def create(self, user: User) -> User:
         self.session.add(user)

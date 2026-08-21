@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import Lenis from '@studio-freight/lenis';
 import { FloatingNavbar } from '../components/ui/FloatingNavbar';
-import { PillButton } from '../components/ui/PillButton';
-import { GlassMetricCard } from '../components/ui/GlassMetricCard';
+import { HeroVideoScrub } from '../components/features/HeroVideoScrub';
 import { JourneyLine } from '../components/features/JourneyLine';
 import SpecularButton from '../components/ui/SpecularButton';
-import { ArrowRight, Check, Zap, Shield, Sparkles, Box, Code } from 'lucide-react';
+import { ArrowRight, Check, Zap, Sparkles, Box, Code } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -14,17 +13,22 @@ gsap.registerPlugin(ScrollTrigger);
 const App: React.FC = () => {
   useEffect(() => {
     // 1. Initialize Lenis (Strict 60FPS scrolling)
+    // `lerp` is frame-rate independent and pairs far better with a scrubbed
+    // timeline than duration+easing, which re-eases every wheel event and makes
+    // the canvas appear to surge and settle rather than track the scroll.
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+      lerp: 0.09,
       orientation: 'vertical',
       smoothWheel: true,
+      syncTouch: true,
     });
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Lenis must drive ScrollTrigger, otherwise pinned/scrubbed timelines never
+    // update: Lenis owns the scroll loop and ScrollTrigger's own listener is
+    // starved, so the hero would scroll past instead of pinning and scrubbing.
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
 
     // Initial animations
     gsap.fromTo('.fade-in-up', 
@@ -32,7 +36,20 @@ const App: React.FC = () => {
       { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', stagger: 0.1 }
     );
 
-    return () => lenis.destroy();
+    // Section snapping is deliberately NOT enabled. Snapping to [0, 1] over
+    // 1.5-3s hijacks the scroll the moment the user pauses, which reads as
+    // stutter rather than smoothness. Lenis alone carries the motion.
+    const sectionTriggers: ScrollTrigger[] = [];
+
+    // Pin measurements depend on images/fonts that settle after mount.
+    ScrollTrigger.refresh();
+
+    return () => {
+      sectionTriggers.forEach((t) => t.kill());
+      gsap.ticker.remove(tick);
+      lenis.off('scroll', ScrollTrigger.update);
+      lenis.destroy();
+    };
   }, []);
 
   return (
@@ -44,57 +61,11 @@ const App: React.FC = () => {
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-32">
         
-        {/* 1. Hero Section (Dark) */}
-        <section className="relative w-full h-[92vh] mt-4 rounded-[40px] overflow-hidden bg-gradient-to-t from-black to-zinc-900 border border-white/10 flex items-center">
-          {/* Abstract BG */}
-          <div className="absolute inset-0 opacity-60 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/40 via-zinc-950 to-black"></div>
-          
-          {/* Massive Background Text */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[22vw] font-bold text-white opacity-5 blur-[2px] select-none pointer-events-none tracking-tighter w-full text-center">
-            RESCUE
-          </div>
-
-          <div className="relative z-10 w-full px-12 md:px-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left Typography */}
-            <div className="fade-in-up">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">V2.0 Now Available</span>
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl lg:text-[80px] font-semibold tracking-[-0.05em] leading-[1.05] mb-8">
-                Assistance at <br/> the speed of <br/> thought.
-              </h1>
-              <p className="text-lg text-zinc-400 font-light max-w-xl mb-12">
-                The world's most advanced AI roadside network. Generate production-ready diagnostic reports, coordinate verified mechanics, and get back on the road in minutes, not hours.
-              </p>
-              
-              <div className="flex items-center gap-6">
-                <PillButton>See it in action</PillButton>
-                <button className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                  View Mechanics
-                </button>
-              </div>
-            </div>
-
-            {/* Right Metric Stack */}
-            <div className="hidden lg:flex flex-col gap-6 items-end fade-in-up">
-              <GlassMetricCard 
-                metric="10x" 
-                description="Faster rescue iterations with AI-assisted diagnostic generation." 
-                icon={<Zap className="w-5 h-5 text-emerald-400" />}
-              />
-              <GlassMetricCard 
-                metric="10,000+" 
-                description="Export-ready mechanics across US, UK, and Europe." 
-                icon={<Shield className="w-5 h-5 text-white/80" />}
-              />
-            </div>
-          </div>
-        </section>
+        {/* 1. Hero — scroll-scrubbed 4K sequence */}
+        <HeroVideoScrub />
 
         {/* 2. Feature Grid (Light Mode Transition Wrapper) */}
-        <div className="relative bg-[#F4F4F5] rounded-[40px] mt-8 pt-32 pb-32 px-12 md:px-24 border border-zinc-200 overflow-hidden text-zinc-900">
+        <div className="snap-section relative bg-[#F4F4F5] rounded-[40px] mt-8 pt-32 pb-32 px-12 md:px-24 border border-zinc-200 overflow-hidden text-zinc-900">
           
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16">
             {/* Left Column: Sticky Header */}

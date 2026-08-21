@@ -1,7 +1,9 @@
+from typing import List, Tuple
 from fastapi import HTTPException, status
 from app.db.repositories.profile import CustomerProfileRepository, MechanicProfileRepository
 from app.schemas.profile import CustomerProfileCreate, CustomerProfileUpdate, MechanicProfileCreate, MechanicProfileUpdate
 from app.models.profile import CustomerProfile, MechanicProfile
+from app.models.vehicle import VehicleType
 
 class CustomerProfileService:
     def __init__(self, profile_repo: CustomerProfileRepository):
@@ -49,3 +51,17 @@ class MechanicProfileService:
     async def update_location(self, user_id: str, latitude: float, longitude: float) -> MechanicProfile:
         profile = await self.get_profile(user_id)
         return await self.profile_repo.update_location(profile, latitude, longitude)
+
+    async def get_availability(self, user_id: str) -> bool:
+        profile = await self.get_profile(user_id)
+        return bool(profile.is_available)
+
+    async def set_availability(self, user_id: str, is_available: bool) -> MechanicProfile:
+        profile = await self.get_profile(user_id)
+        return await self.profile_repo.update_availability(profile, is_available)
+
+    async def find_nearby(
+        self, latitude: float, longitude: float, vehicle_type: VehicleType
+    ) -> List[Tuple[MechanicProfile, float]]:
+        """FR-02 discovery. Eligibility is decided entirely in the repository query."""
+        return await self.profile_repo.find_nearby(latitude, longitude, vehicle_type)

@@ -1,0 +1,8 @@
+# Development / test dependencies.
+# Production runtime dependencies live in requirements.txt and are unchanged.
+# Install with:  pip install -r requirements-dev.txt
+-r requirements.txt
+
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1

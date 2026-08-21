@@ -10,7 +10,7 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
           The application encountered an unexpected error.
         </p>
         <pre className="mb-6 overflow-auto rounded-lg bg-slate-950 p-4 text-left text-xs text-red-400 border border-slate-800/50">
-          {error.message}
+          {error instanceof Error ? error.message : String(error)}
         </pre>
         <button
           onClick={resetErrorBoundary}

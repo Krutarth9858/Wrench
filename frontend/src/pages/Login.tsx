@@ -10,7 +10,7 @@ import gsap from 'gsap';
 
 const WrenchLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { setToken, fetchUser } = useAuth();
+  const login = useAuth((state) => state.login);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,14 +30,10 @@ const WrenchLogin: React.FC = () => {
     setLoading(true);
 
     try {
-      // MOCK LOGIN
-      await new Promise(r => setTimeout(r, 800));
-      
-      setToken('mock-jwt-token');
-      await fetchUser();
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message);
+      await login(email, password);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in.');
     } finally {
       setLoading(false);
     }

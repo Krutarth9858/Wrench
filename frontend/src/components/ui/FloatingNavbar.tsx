@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { cn } from '../../lib/utils';
 import { PillButton } from './PillButton';
 import { ArrowUpRight, LogOut } from 'lucide-react';
@@ -9,18 +9,11 @@ interface FloatingNavbarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarProps>(
   ({ className, ...props }, ref) => {
-    const { user, token, logout, fetchUser } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Fetch user on mount if we have a token but no user
-    useEffect(() => {
-      if (token && !user) {
-        fetchUser();
-      }
-    }, [token, user, fetchUser]);
-
     const handleLogout = () => {
-      logout();
+      void logout();
       navigate('/');
     };
 

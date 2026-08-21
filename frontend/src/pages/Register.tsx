@@ -10,12 +10,13 @@ import gsap from 'gsap';
 
 const WrenchRegister: React.FC = () => {
   const navigate = useNavigate();
-  const { setToken, fetchUser } = useAuth();
+  const registerUser = useAuth((state) => state.register);
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     phone_number: '',
+    role: 'CUSTOMER' as 'CUSTOMER' | 'MECHANIC',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,14 +38,10 @@ const WrenchRegister: React.FC = () => {
     setLoading(true);
 
     try {
-      // MOCK REGISTER & LOGIN
-      await new Promise(r => setTimeout(r, 800));
-      
-      setToken('mock-jwt-token');
-      await fetchUser();
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message);
+      await registerUser(formData);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create your account.');
     } finally {
       setLoading(false);
     }
@@ -120,9 +117,32 @@ const WrenchRegister: React.FC = () => {
                     name="phone_number"
                     value={formData.phone_number}
                     onChange={handleChange}
+                    required
+                    pattern="\+?[1-9]\d{1,14}"
+                    title="International format, e.g. +11234567890"
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:bg-white/[0.05] transition-all"
                     placeholder="+1234567890"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">I am a</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['CUSTOMER', 'MECHANIC'] as const).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, role: option }))}
+                        className={`h-11 rounded-2xl border text-sm font-medium transition-colors ${
+                          formData.role === option
+                            ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                            : 'bg-white/[0.03] border-white/10 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {option === 'CUSTOMER' ? 'Vehicle owner' : 'Mechanic'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2 relative">

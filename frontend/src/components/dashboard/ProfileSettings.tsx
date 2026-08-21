@@ -41,7 +41,7 @@ export default function ProfileSettings() {
   };
 
   return (
-    <div className="bg-white/[0.02] backdrop-blur-[40px] rounded-[32px] p-8 border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] profile-anim">
+    <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5 shadow-[0_0_80px_rgba(0,0,0,0.5)] profile-anim">
       
       <div className="mb-8">
         <h2 className="text-2xl font-semibold text-white tracking-tight">Profile Settings</h2>
@@ -111,7 +111,7 @@ export default function ProfileSettings() {
         </div>
 
         {/* Mechanic Specific Info */}
-        {user?.role === 'mechanic' && (
+        {user?.role === 'MECHANIC' && (
           <div className="space-y-4 profile-anim pt-4">
             <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500 border-b border-white/10 pb-2">Mechanic Details</h3>
             

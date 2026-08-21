@@ -1,5 +1,8 @@
 from pydantic import BaseModel, HttpUrl, Field, ConfigDict, field_validator
 from typing import Optional, List
+from uuid import UUID
+
+from app.models.vehicle import VehicleType
 import re
 
 class LocationUpdate(BaseModel):
@@ -53,8 +56,8 @@ class CustomerProfileUpdate(BaseModel):
         return v
 
 class CustomerProfileResponse(CustomerProfileBase):
-    id: str
-    user_id: str
+    id: UUID
+    user_id: UUID
     profile_image: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
@@ -65,7 +68,7 @@ class MechanicProfileBase(BaseModel):
     experience_years: int = Field(..., ge=0)
     bio: Optional[str] = None
     specialization: str
-    supported_vehicle_types: List[str]
+    supported_vehicle_types: List[VehicleType] = Field(..., min_length=1)
     address: str
     city: str
     state: str
@@ -78,15 +81,11 @@ class MechanicProfileBase(BaseModel):
 
     @field_validator("supported_vehicle_types")
     @classmethod
-    def validate_vehicle_types(cls, v: List[str]) -> List[str]:
-        if not v:
-            raise ValueError("Must support at least one vehicle type")
-        valid_types = {"Bike", "Car", "EV", "Truck", "Scooter"}
-        for vt in v:
-            if vt not in valid_types:
-                raise ValueError(f"Invalid vehicle type: {vt}. Must be one of {valid_types}")
-        return v
-        
+    def deduplicate_vehicle_types(cls, v: List[VehicleType]) -> List[VehicleType]:
+        # Order-preserving dedupe; the enum itself rejects out-of-scope categories.
+        return list(dict.fromkeys(v))
+
+    
     @field_validator("working_start_time", "working_end_time")
     @classmethod
     def validate_time_format(cls, v: str) -> str:
@@ -103,7 +102,7 @@ class MechanicProfileUpdate(BaseModel):
     experience_years: Optional[int] = Field(None, ge=0)
     bio: Optional[str] = None
     specialization: Optional[str] = None
-    supported_vehicle_types: Optional[List[str]] = None
+    supported_vehicle_types: Optional[List[VehicleType]] = Field(None, min_length=1)
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
@@ -115,15 +114,10 @@ class MechanicProfileUpdate(BaseModel):
 
     @field_validator("supported_vehicle_types")
     @classmethod
-    def validate_vehicle_types(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        if v is not None:
-            if not v:
-                raise ValueError("Must support at least one vehicle type")
-            valid_types = {"Bike", "Car", "EV", "Truck", "Scooter"}
-            for vt in v:
-                if vt not in valid_types:
-                    raise ValueError(f"Invalid vehicle type: {vt}. Must be one of {valid_types}")
-        return v
+    def deduplicate_vehicle_types(
+        cls, v: Optional[List[VehicleType]]
+    ) -> Optional[List[VehicleType]]:
+        return list(dict.fromkeys(v)) if v is not None else None
 
     @field_validator("working_start_time", "working_end_time")
     @classmethod
@@ -133,8 +127,8 @@ class MechanicProfileUpdate(BaseModel):
         return v
 
 class MechanicProfileResponse(MechanicProfileBase):
-    id: str
-    user_id: str
+    id: UUID
+    user_id: UUID
     is_available: bool
     is_verified: bool
     average_rating: float
@@ -142,3 +136,43 @@ class MechanicProfileResponse(MechanicProfileBase):
     completed_jobs: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AvailabilityUpdate(BaseModel):
+    """FR-09: mechanics self-manage their real-time availability."""
+
+    is_available: bool
+
+
+class AvailabilityResponse(BaseModel):
+    is_available: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NearbyMechanic(BaseModel):
+    """Public projection of a mechanic for discovery (FR-02).
+
+    Deliberately omits the street address, owner name, phone and working hours:
+    a customer choosing a mechanic needs identity, coverage and distance only.
+    """
+
+    id: UUID
+    garage_name: str
+    specialization: str
+    city: str
+    latitude: float
+    longitude: float
+    distance_km: float
+    supported_vehicle_types: List[VehicleType]
+    is_available: bool
+    service_radius_km: float
+    experience_years: int
+    average_rating: float
+    total_reviews: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NearbyMechanicList(BaseModel):
+    mechanics: List[NearbyMechanic]

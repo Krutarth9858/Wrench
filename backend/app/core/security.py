@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 import jwt
@@ -30,7 +31,11 @@ def create_refresh_token(subject: Union[str, Any], expires_delta: timedelta = No
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
-    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh"}
+    # A random jti keeps every refresh token unique. Without it, two tokens minted
+    # for the same user within the same second are byte-identical (exp has 1-second
+    # resolution), and the second insert violates the unique index on
+    # refresh_tokens.hashed_token -> HTTP 500 on a rapid login-then-refresh.
+    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh", "jti": uuid.uuid4().hex}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

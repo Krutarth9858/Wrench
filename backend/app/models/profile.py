@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, func, Text, Boolean, Integer, Numeric
+from sqlalchemy import Column, String, Float, DateTime, Enum as SQLEnum, ForeignKey, func, Text, Boolean, Integer, Numeric
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.vehicle import VehicleType
 
 class CustomerProfile(Base):
     __tablename__ = "customer_profiles"
@@ -41,7 +42,9 @@ class MechanicProfile(Base):
     experience_years = Column(Integer, nullable=False)
     bio = Column(Text, nullable=True)
     specialization = Column(String, nullable=False)
-    supported_vehicle_types = Column(ARRAY(String), nullable=False)
+    # Canonical representation: the same VehicleType enum used by vehicles.
+    # RAD scope is two- and four-wheelers only, so BIKE | CAR.
+    supported_vehicle_types = Column(ARRAY(SQLEnum(VehicleType)), nullable=False)
     
     address = Column(String, nullable=False)
     city = Column(String, nullable=False)

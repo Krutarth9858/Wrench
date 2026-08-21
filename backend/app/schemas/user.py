@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Literal, Optional
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 import re
 
@@ -16,13 +17,17 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
+    # Public self-registration is limited to the two roles the RAD says may sign up.
+    # ADMIN is deliberately NOT accepted here; it is provisioned out-of-band by
+    # scripts/create_admin.py. Sending role="ADMIN" fails validation with 422.
+    role: Literal["CUSTOMER", "MECHANIC"] = "CUSTOMER"
     
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
 class UserResponse(UserBase):
-    id: str
+    id: UUID
     role: str
     is_active: bool
     
