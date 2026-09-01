@@ -8,14 +8,18 @@ import BookMechanic from '../components/dashboard/BookMechanic';
 import Troubleshoot from '../components/dashboard/Troubleshoot';
 import MyBookings from '../components/dashboard/MyBookings';
 import MechanicBookings from '../components/dashboard/MechanicBookings';
-import MechanicOverview from '../components/dashboard/MechanicOverview';
-import { User, MapPin, Wrench, SignOut, SquaresFour, Tray, Clock, ToggleRight, Sparkle } from '@phosphor-icons/react';
+import MechanicDispatch from '../components/dashboard/MechanicDispatch';
+import MechanicSchedule from '../components/dashboard/MechanicSchedule';
+import MechanicEarnings from '../components/dashboard/MechanicEarnings';
+import NotFoundPanel from '../components/dashboard/NotFoundPanel';
+import { User, MapPin, Toolbox, SignOut, SquaresFour, Tray, Clock, ToggleRight, Sparkle } from '@phosphor-icons/react';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const isMechanic = user?.role === 'MECHANIC';
   const location = useLocation();
   const navigate = useNavigate();
+  const isMapPage = (location.pathname === '/dashboard/find' && !isMechanic) || (location.pathname === '/dashboard' && isMechanic);
 
   const handleLogout = () => {
     logout();
@@ -26,7 +30,7 @@ const Dashboard: React.FC = () => {
     ? [
         { name: 'Dashboard', path: '/dashboard', icon: <SquaresFour className="w-5 h-5" /> },
         { name: 'Requests', path: '/dashboard/requests', icon: <Tray className="w-5 h-5" /> },
-        { name: 'Active Services', path: '/dashboard/active', icon: <Wrench className="w-5 h-5" /> },
+        { name: 'Active Services', path: '/dashboard/active', icon: <Toolbox className="w-5 h-5" /> },
         { name: 'History', path: '/dashboard/history', icon: <Clock className="w-5 h-5" /> },
         { name: 'Availability', path: '/dashboard/availability', icon: <ToggleRight className="w-5 h-5" /> },
         { name: 'Profile', path: '/dashboard/profile', icon: <User className="w-5 h-5" /> },
@@ -35,15 +39,24 @@ const Dashboard: React.FC = () => {
         { name: 'My Profile', path: '/dashboard', icon: <User className="w-5 h-5" /> },
         { name: 'Troubleshoot', path: '/dashboard/troubleshoot', icon: <Sparkle className="w-5 h-5" /> },
         { name: 'Book a Mechanic', path: '/dashboard/find', icon: <MapPin className="w-5 h-5" /> },
-        { name: 'My Bookings', path: '/dashboard/bookings', icon: <Wrench className="w-5 h-5" /> },
+        { name: 'My Bookings', path: '/dashboard/bookings', icon: <Toolbox className="w-5 h-5" /> },
       ];
 
 
   return (
-    <div className="bg-[#0A0A0B] h-screen overflow-hidden pt-28 text-white font-sans selection:bg-emerald-500/30">
+    <div
+      className={`h-screen overflow-hidden font-sans selection:bg-[#00966B]/30 ${
+        isMapPage ? '' : 'bg-[#0A0A0B] pt-28 text-white'
+      }`}
+      style={isMapPage ? { background: 'linear-gradient(180deg, #EBF3FC, #F5F9FD)' } : undefined}
+    >
       {/* Grayscale lineart grid — same treatment as the landing page's dark panels */}
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-t from-[#18181B] via-transparent to-[#18181B]"></div>
+      {!isMapPage && (
+        <>
+          <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+          <div className="pointer-events-none fixed inset-0 bg-gradient-to-t from-[#18181B] via-transparent to-[#18181B]"></div>
+        </>
+      )}
 
       <FloatingNavbar />
 
@@ -53,13 +66,24 @@ const Dashboard: React.FC = () => {
           pills legitimately own those pixels, so no z-index on the control can help.
           The clearance is padding on the *clipping* parent, not on the scroll box:
           padding inside a scroller scrolls away and stops clearing anything. */}
-      <div className="relative h-full overflow-y-auto pb-12">
-        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className={`relative h-full overflow-y-auto ${isMapPage ? '' : 'pb-12'}`}>
+        {isMapPage ? (
+          <main className="h-full w-full">
+            <Routes>
+              {isMechanic ? (
+                <Route path="/" element={<MechanicDispatch />} />
+              ) : (
+                <Route path="/find" element={<BookMechanic />} />
+              )}
+            </Routes>
+          </main>
+        ) : (
+          <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Sidebar */}
           <aside className="w-full lg:w-64 shrink-0">
-            <div className="sticky top-28 bg-[#18181B] rounded-[40px] p-6 border border-white/5 shadow-[0_0_80px_rgba(0,0,0,0.5)]">
+            <div className="sticky top-28 glass-panel p-6">
               <div className="mb-8">
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-4 block">
                   Account
@@ -106,7 +130,7 @@ const Dashboard: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={isMechanic ? <MechanicOverview /> : <ProfileSettings />}
+                element={isMechanic ? <MechanicDispatch /> : <ProfileSettings />}
               />
               {isMechanic ? (
                 <>
@@ -116,19 +140,22 @@ const Dashboard: React.FC = () => {
                   <Route path="/availability" element={<MechanicProfilePanel />} />
                   <Route path="/profile" element={<MechanicProfilePanel />} />
                   <Route path="/bookings" element={<MechanicBookings />} />
+                  <Route path="/schedule" element={<MechanicSchedule />} />
+                  <Route path="/earnings" element={<MechanicEarnings />} />
                 </>
               ) : (
                 <>
                   <Route path="/troubleshoot" element={<Troubleshoot />} />
-                  <Route path="/find" element={<BookMechanic />} />
                   <Route path="/bookings" element={<MyBookings />} />
                 </>
               )}
+              <Route path="*" element={<NotFoundPanel />} />
             </Routes>
           </section>
 
           </div>
         </main>
+        )}
       </div>
     </div>
   );

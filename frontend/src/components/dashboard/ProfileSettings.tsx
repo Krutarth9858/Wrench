@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
-import { MapPin, User, SpinnerGap, Wrench } from '@phosphor-icons/react';
+import { MapPin, User, SpinnerGap, Toolbox } from '@phosphor-icons/react';
 import SpecularButton from '../ui/SpecularButton';
 import gsap from 'gsap';
 
@@ -145,7 +145,7 @@ export default function ProfileSettings() {
                     onChange={(e) => setSpecialties(e.target.value)}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 pl-11 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:bg-white/[0.05] transition-all"
                   />
-                  <Wrench className="absolute left-4 top-3.5 w-4 h-4 text-zinc-500" />
+                  <Toolbox className="absolute left-4 top-3.5 w-4 h-4 text-zinc-500" />
                 </div>
               </div>
             </div>

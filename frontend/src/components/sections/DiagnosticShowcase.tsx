@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 const STEPS = 5; // problem → question → result → searching → matched
 const STEP_MS = 1400;
 
-const CARD = 'rounded-xl border border-white/10 bg-white/[0.04]';
+const CARD = 'glass-card';
 const MUTED = 'text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35';
 
 export default function DiagnosticShowcase() {
@@ -44,7 +44,7 @@ export default function DiagnosticShowcase() {
     <div
       data-testid="diagnostic-showcase"
       data-step={step}
-      className="absolute inset-2 rounded-[28px] bg-[#0B0B0C] border border-white/5 overflow-hidden flex flex-col"
+      className="absolute inset-2 glass-panel overflow-hidden flex flex-col"
     >
       {/* faint product-grid ground, consistent with the dashboard surfaces */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.035] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:28px_28px]" />

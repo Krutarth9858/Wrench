@@ -395,7 +395,7 @@ their 15-minute expiry (no denylist).
 
 **Missing / weak — present as findings, NOT to fix in this task**
 - **No CORS middleware.** `app/main.py` adds no `CORSMiddleware`, so a browser frontend on
-  `:5173` could not call `:8000` at all. (Latent today only because the frontend never calls.)
+  `:5174` could not call `:8000` at all. (Latent today only because the frontend never calls.)
 - **Default `SECRET_KEY` committed** in both `app/core/config.py` and `.env.example`, and
   the config default means a missing env var silently yields a known signing key.
 - **DB password committed** in `docker-compose.yml` / `.env.example`.
@@ -563,7 +563,7 @@ Product-requirement status lives in **Product Requirements vs Implementation** (
 | Add a frontend route | `frontend/src/App.tsx` (or `pages/Dashboard.tsx` for nested) |
 | Touch styling / design tokens | `frontend/tailwind.config.js`, `frontend/src/index.css`, `frontend/docs/DESIGN_SYSTEM.md` |
 | Run backend | `docker-compose up --build -d`, then `alembic upgrade head` manually |
-| Run frontend | `cd frontend && npm install && npm run dev` (:5173) |
+| Run frontend | `cd frontend && npm install && npm run dev` (:5174) |
 
 ---
 
@@ -822,9 +822,9 @@ live frontend→backend round trip. **27 tests pass (16 backend, 11 frontend); 0
 | 3. Backend env | `cp backend/.env.example backend/.env` then set `SECRET_KEY` | `python -c "import secrets; print(secrets.token_hex(32))"` |
 | 4. Migrations | `cd backend && ./venv/bin/python -m alembic upgrade head` | Not automatic; compose does not run it either. |
 | 5. Backend | `cd backend && ./venv/bin/python -m uvicorn app.main:app --reload` | http://localhost:8000 · docs at `/docs` |
-| 6. Frontend | `cd frontend && npm install && npm run dev` | http://localhost:5173 |
+| 6. Frontend | `cd frontend && npm install && npm run dev` | http://localhost:5174 |
 
-**Verify:** open http://localhost:5173 — a badge reads **"Backend connected"** (bottom-left,
+**Verify:** open http://localhost:5174 — a badge reads **"Backend connected"** (bottom-left,
 dev builds only). Confirmed live: `GET http://localhost:8000/api/v1/health → 200`.
 
 **Python 3.11 is required.** `requirements.txt` pins (pydantic 2.7.4, asyncpg 0.29.0) need
@@ -864,7 +864,7 @@ Health for the smoke flow: `GET /api/v1/health` → `{"status":"ok"}`.
 |---|---|---|---|
 | `DATABASE_URL` | backend | yes | none |
 | `SECRET_KEY` | backend | **yes — startup fails without it** | none (by design) |
-| `BACKEND_CORS_ORIGINS` | backend | no | `http://localhost:5173` (comma-separated or JSON) |
+| `BACKEND_CORS_ORIGINS` | backend | no | `http://localhost:5174` (comma-separated or JSON) |
 | `TEST_DATABASE_URL` | backend tests | no | `postgresql+asyncpg://postgres@localhost:5432/wrench_test` |
 | `VITE_API_BASE_URL` | frontend | no | `http://localhost:8000/api/v1` |
 
@@ -1050,7 +1050,7 @@ to Phase 9. Documented rather than silently accepted.
 Start: `brew services start postgresql@18` · `cd backend && ./venv/bin/python -m uvicorn
 app.main:app --reload` · `cd frontend && npm run dev`
 
-1. http://localhost:5173 → hero (signed out) 2. Register → choose Vehicle owner or
+1. http://localhost:5174 → hero (signed out) 2. Register → choose Vehicle owner or
 Mechanic 3. Lands on `/dashboard` 4. Reload → still signed in 5. Sign Out →
 `/dashboard` redirects to `/login` 6. `/` shows the hero again.
 

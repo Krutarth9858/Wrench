@@ -92,7 +92,7 @@ def main() -> None:
 
     print(f"\n  Password for every account: {PASSWORD}")
     print(f"  Search from: {ORIGIN[0]}, {ORIGIN[1]}")
-    print("\nSign in at http://localhost:5173/login")
+    print("\nSign in at http://localhost:5174/login")
 
 
 if __name__ == "__main__":

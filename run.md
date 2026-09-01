@@ -89,7 +89,7 @@ Then edit `backend/.env`:
 DATABASE_URL="postgresql+asyncpg://postgres@localhost:5432/wrench"
 TEST_DATABASE_URL="postgresql+asyncpg://postgres@localhost:5432/wrench_test"
 SECRET_KEY="<paste the generated value>"
-BACKEND_CORS_ORIGINS="http://localhost:5173"
+BACKEND_CORS_ORIGINS="http://localhost:5174"
 ```
 
 Generate the secret:
@@ -113,14 +113,14 @@ Not automatic. Run them yourself, from `backend/`:
 ./venv/bin/python -m alembic upgrade head
 ```
 
-Applies migrations `0001` → `0006`. Verify:
+Applies migrations `0001` → `0007`. Verify:
 
 ```bash
 psql -d wrench -c "\dt"
 ```
 
 Expect `users`, `refresh_tokens`, `customer_profiles`, `mechanic_profiles`, `vehicles`,
-`bookings`, `alembic_version`.
+`bookings`, `diagnostic_sessions`, `diagnostic_messages`, `alembic_version`.
 
 ### Start
 
@@ -147,7 +147,7 @@ cp .env.example .env      # optional; the default already points at localhost:80
 npm run dev
 ```
 
-Open <http://localhost:5173>. A badge in the bottom-left reads **"Backend connected"** in
+Open <http://localhost:5174>. A badge in the bottom-left reads **"Backend connected"** in
 dev builds — that is the end-to-end smoke test. If it says "Backend unreachable", the
 backend is not running or `VITE_API_BASE_URL` is wrong.
 
@@ -155,7 +155,7 @@ backend is not running or `VITE_API_BASE_URL` is wrong.
 
 ## 5. Try it
 
-Register two accounts through the UI at <http://localhost:5173/register> — the form has a
+Register two accounts through the UI at <http://localhost:5174/register> — the form has a
 role toggle.
 
 **As a mechanic** (choose *Mechanic* when registering)

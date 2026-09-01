@@ -74,7 +74,7 @@ export default function VehicleModal({ isOpen, onClose, onSave, initialData }: V
       ></div>
 
       {/* Modal */}
-      <div className="modal-content relative w-full max-w-md bg-zinc-950/80 backdrop-blur-[40px] rounded-[32px] p-8 border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)]">
+      <div className="modal-content relative w-full max-w-md glass-panel p-8">
         
         <button 
           onClick={onClose}

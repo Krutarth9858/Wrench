@@ -49,8 +49,27 @@ export interface Availability {
   is_available: boolean;
 }
 
+/**
+ * Share one in-flight request between concurrent callers.
+ *
+ * The navbar, the dispatch panel and the profile panel are mounted together and
+ * each legitimately needs the mechanic profile, so a single render fired the same
+ * GET several times. This collapses only *simultaneous* calls — the entry is
+ * dropped as soon as the request settles, so nothing is ever served from a cache
+ * and a refetch after a save still hits the network.
+ */
+const inFlight = new Map<string, Promise<unknown>>();
+
+function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const pending = inFlight.get(key) as Promise<T> | undefined;
+  if (pending) return pending;
+  const promise = run().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
+
 export function getMechanicProfile(): Promise<MechanicProfile> {
-  return apiFetchData<MechanicProfile>('/profile/mechanic/');
+  return dedupe('profile', () => apiFetchData<MechanicProfile>('/profile/mechanic/'));
 }
 
 /** PUT is an upsert server-side; it deliberately leaves availability untouched. */
@@ -59,7 +78,7 @@ export function saveMechanicProfile(input: MechanicProfileInput): Promise<Mechan
 }
 
 export function getAvailability(): Promise<Availability> {
-  return apiFetchData<Availability>('/profile/mechanic/availability');
+  return dedupe('availability', () => apiFetchData<Availability>('/profile/mechanic/availability'));
 }
 
 export function setAvailability(isAvailable: boolean): Promise<Availability> {

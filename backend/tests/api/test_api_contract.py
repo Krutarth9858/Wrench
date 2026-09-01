@@ -44,7 +44,7 @@ async def test_health_endpoint(client, api_prefix):
 
 @pytest.mark.asyncio
 async def test_cors_allows_vite_dev_origin(client, api_prefix):
-    origin = "http://localhost:5173"
+    origin = "http://localhost:5174"
     response = await client.get(f"{api_prefix}/health", headers={"Origin": origin})
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == origin

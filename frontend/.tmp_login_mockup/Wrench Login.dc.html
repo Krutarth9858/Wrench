@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#08090A;}
+*{box-sizing:border-box;}
+a{color:#3ECF8E;text-decoration:none;}
+a:hover{color:#6BE0AC;}
+input::placeholder{color:rgba(244,246,245,0.32);}
+@keyframes wr-spin{to{transform:rotate(360deg)}}
+@keyframes wr-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes wr-field{from{opacity:0;transform:translateY(14px) scale(0.985)}to{opacity:1;transform:none}}
+@keyframes wr-sweep{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+@keyframes wr-pop{0%{opacity:0;transform:scale(0.6)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+@keyframes wr-ring{from{opacity:0.5;transform:scale(0.9)}to{opacity:0;transform:scale(1.9)}}
+@keyframes wr-dash{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="position:relative;min-height:100vh;overflow:hidden;background:#08090A;color:#F4F6F5;font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased">
+
+  <div style="position:absolute;inset:0;background:radial-gradient(115% 85% at 12% 8%, rgba(62,207,142,0.10), transparent 55%),radial-gradient(90% 70% at 88% 95%, rgba(120,150,255,0.05), transparent 60%);pointer-events:none"></div>
+  <div style="position:absolute;inset:0;opacity:0.5;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);background-size:88px 88px;mask-image:radial-gradient(120% 100% at 20% 20%, #000 0%, transparent 70%);-webkit-mask-image:radial-gradient(120% 100% at 20% 20%, #000 0%, transparent 70%)"></div>
+  <div style="position:absolute;left:-10%;top:-20%;width:70%;height:160%;transform:rotate(14deg);opacity:0.55;pointer-events:none;background:repeating-linear-gradient(90deg, transparent 0 178px, rgba(255,255,255,0.05) 178px 180px);mask-image:linear-gradient(180deg, transparent, #000 35%, transparent 90%);-webkit-mask-image:linear-gradient(180deg, transparent, #000 35%, transparent 90%)"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 240px 60px rgba(0,0,0,0.75)"></div>
+
+  <div style="position:relative;display:flex;align-items:stretch;min-height:100vh;flex-direction: {{ rootDir }}">
+
+    <section style="flex:1.25 1 520px;display:flex;flex-direction:column;justify-content:center;gap:clamp(22px,3.2vh,40px);padding:clamp(32px,4.5vw,76px) clamp(28px,4.5vw,64px)">
+      <header style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:26px;height:26px;border-radius:8px;border:1px solid rgba(62,207,142,0.55);display:flex;align-items:center;justify-content:center;font:600 13px/1 Manrope,sans-serif;color:#3ECF8E;background:rgba(62,207,142,0.08)">W</div>
+          <span style="font:600 17px/1 Manrope,sans-serif;letter-spacing:0.16em">WRENCH</span>
+        </div>
+        <span style="font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.28em;color:rgba(244,246,245,0.42)">ROADSIDE ASSISTANCE</span>
+      </header>
+
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:19ch">
+        <h1 style="margin:0;font:600 clamp(34px,4.4vw,60px)/1.06 Manrope,sans-serif;letter-spacing:-0.028em;text-wrap:pretty">Help is closer than you think.</h1>
+        <p style="margin:0;max-width:34ch;font:400 clamp(14px,1.05vw,16px)/1.65 Manrope,sans-serif;color:rgba(244,246,245,0.55);text-wrap:pretty">Diagnose the problem. Find a nearby mechanic. Get back on the road.</p>
+      </div>
+
+      <sc-if value="{{ showFullMock }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px">
+
+          <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-radius:16px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07)">
+            <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(244,246,245,0.38)">CUSTOMER PROBLEM</span>
+            <span style="font:400 15px/1.4 Manrope,sans-serif;color:rgba(244,246,245,0.92)">“My bike won’t start.”</span>
+          </div>
+
+          <div style="display:flex;justify-content:center;color:rgba(244,246,245,0.22);font:400 12px/1 Manrope,sans-serif">↓</div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-radius:16px;background:linear-gradient(180deg, rgba(62,207,142,0.07), rgba(62,207,142,0.02));border:1px solid rgba(62,207,142,0.20)">
+            <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(62,207,142,0.85)">WRENCH AI</span>
+            <span style="font:400 15px/1.4 Manrope,sans-serif;color:rgba(244,246,245,0.92)">“Let’s check a few things.”</span>
+          </div>
+
+          <div style="display:flex;justify-content:center;color:rgba(244,246,245,0.22);font:400 12px/1 Manrope,sans-serif">↓</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;border-radius:16px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07)">
+            <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(244,246,245,0.38)">DIAGNOSTIC</span>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.45)">Possible issue</span>
+              <span style="font:500 15px/1.3 Manrope,sans-serif">Battery / starter system</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.45)">Confidence</span>
+                <span style="font:500 11px/1 'JetBrains Mono',ui-monospace,monospace;color:#3ECF8E">60%</span>
+              </div>
+              <div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden">
+                <div style="width:60%;height:100%;border-radius:2px;background:linear-gradient(90deg, rgba(62,207,142,0.5), #3ECF8E)"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:center;color:rgba(244,246,245,0.22);font:400 12px/1 Manrope,sans-serif">↓</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;border-radius:16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);box-shadow:0 18px 40px -28px rgba(0,0,0,0.9)">
+            <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(244,246,245,0.38)">MECHANIC MATCH</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <span style="font:600 16px/1.2 Manrope,sans-serif">MV Motors</span>
+                <div style="display:flex;align-items:center;gap:10px;font:400 12px/1 Manrope,sans-serif;color:rgba(244,246,245,0.5)">
+                  <span style="color:rgba(244,246,245,0.75)">★ 4.9</span>
+                  <span style="width:3px;height:3px;border-radius:50%;background:rgba(244,246,245,0.25)"></span>
+                  <span>2.4 km away</span>
+                </div>
+              </div>
+              <span style="flex:none;padding:5px 10px;border-radius:999px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.28);font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.16em;color:#3ECF8E">AVAILABLE</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+              <div style="display:flex;align-items:center;gap:7px;font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.6)">
+                <span style="width:7px;height:7px;border-radius:50%;background:#F4F6F5;box-shadow:0 0 0 4px rgba(244,246,245,0.12)"></span>You
+              </div>
+              <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg, rgba(62,207,142,0.6) 0 6px, transparent 6px 12px)"></div>
+              <span style="font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;color:rgba(244,246,245,0.4)">2.4 km</span>
+              <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg, rgba(62,207,142,0.6) 0 6px, transparent 6px 12px)"></div>
+              <div style="display:flex;align-items:center;gap:7px;font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.75)">
+                <span style="width:7px;height:7px;border-radius:2px;background:#3ECF8E;box-shadow:0 0 0 4px rgba(62,207,142,0.15)"></span>MV Motors
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCompactMock }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+          <span style="width:7px;height:7px;border-radius:50%;background:#F4F6F5;flex:none"></span>
+          <span style="font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.55)">You</span>
+          <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg, rgba(62,207,142,0.6) 0 6px, transparent 6px 12px)"></div>
+          <span style="font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;color:rgba(244,246,245,0.4)">2.4 km</span>
+          <span style="font:500 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.8)">MV Motors</span>
+          <span style="width:7px;height:7px;border-radius:2px;background:#3ECF8E;flex:none"></span>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="flex:1 1 440px;display:flex;align-items:center;justify-content:center;padding:clamp(28px,4vw,64px) clamp(22px,3.5vw,56px)">
+      <div style="position:relative;width:100%;max-width:412px;border-radius:24px;padding:clamp(26px,2.6vw,36px);background:rgba(24,26,27,0.66);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);border:1px solid rgba(255,255,255,0.10);box-shadow:0 1px 0 0 rgba(255,255,255,0.09) inset, 0 -1px 0 0 rgba(0,0,0,0.4) inset, 0 40px 90px -40px rgba(0,0,0,0.95), 0 8px 24px -16px rgba(0,0,0,0.7);animation:wr-rise 520ms cubic-bezier(.2,.7,.25,1) both">
+
+        <div style="position:absolute;top:0;left:22%;right:22%;height:1px;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);pointer-events:none"></div>
+
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <div style="display:flex;flex-direction:column;gap:7px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 90ms both">
+            <h2 style="margin:0;font:600 26px/1.15 Manrope,sans-serif;letter-spacing:-0.02em">Welcome back</h2>
+            <p style="margin:0;font:400 13.5px/1.5 Manrope,sans-serif;color:rgba(244,246,245,0.5)">Sign in to Wrench</p>
+          </div>
+
+          <form onSubmit="{{ onSubmit }}" style="display:flex;flex-direction:column;gap:16px">
+            <label style="display:flex;flex-direction:column;gap:8px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 190ms both">
+              <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;transition:color 220ms ease;color: {{ emailLabelColor }}">EMAIL</span>
+              <div style="position:relative">
+                <input type="email" placeholder="Enter your email" autoComplete="email" value="{{ email }}" onChange="{{ onEmail }}" onFocus="{{ focusEmail }}" onBlur="{{ blurField }}" style="width:100%;height:50px;padding:0 15px;border-radius:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:#F4F6F5;font:400 15px/1 Manrope,sans-serif;outline:none;transition:border-color 220ms ease, box-shadow 260ms cubic-bezier(.2,.7,.25,1), background 220ms ease" style-focus="border-color:rgba(62,207,142,0.55);box-shadow:0 0 0 3px rgba(62,207,142,0.13);background:rgba(255,255,255,0.075)" style-hover="border-color:rgba(255,255,255,0.18)">
+                <div style="position:absolute;left:15px;right:15px;bottom:0;height:1px;overflow:hidden;pointer-events:none;transition:opacity 220ms ease;opacity: {{ emailSweep }}">
+                  <div style="width:34%;height:100%;background:linear-gradient(90deg, transparent, #3ECF8E, transparent);animation:wr-sweep 1600ms cubic-bezier(.5,0,.5,1) infinite"></div>
+                </div>
+              </div>
+            </label>
+
+            <label style="display:flex;flex-direction:column;gap:8px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 280ms both">
+              <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;transition:color 220ms ease;color: {{ passwordLabelColor }}">PASSWORD</span>
+              <div style="position:relative">
+                <input type="password" placeholder="Enter your password" autoComplete="current-password" value="{{ password }}" onChange="{{ onPassword }}" onFocus="{{ focusPassword }}" onBlur="{{ blurField }}" style="width:100%;height:50px;padding:0 15px;border-radius:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:#F4F6F5;font:400 15px/1 Manrope,sans-serif;outline:none;transition:border-color 220ms ease, box-shadow 260ms cubic-bezier(.2,.7,.25,1), background 220ms ease" style-focus="border-color:rgba(62,207,142,0.55);box-shadow:0 0 0 3px rgba(62,207,142,0.13);background:rgba(255,255,255,0.075)" style-hover="border-color:rgba(255,255,255,0.18)">
+                <div style="position:absolute;left:15px;right:15px;bottom:0;height:1px;overflow:hidden;pointer-events:none;transition:opacity 220ms ease;opacity: {{ passwordSweep }}">
+                  <div style="width:34%;height:100%;background:linear-gradient(90deg, transparent, #3ECF8E, transparent);animation:wr-sweep 1600ms cubic-bezier(.5,0,.5,1) infinite"></div>
+                </div>
+              </div>
+            </label>
+
+            <div style="display:flex;justify-content:flex-end;margin-top:-4px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 340ms both">
+              <a href="#" style="font:400 12.5px/1 Manrope,sans-serif;color:rgba(244,246,245,0.5)" style-hover="color:#3ECF8E">Forgot password?</a>
+            </div>
+
+            <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;background:rgba(224,110,96,0.09);border:1px solid rgba(224,110,96,0.26);animation:wr-rise 240ms ease both">
+                <span style="flex:none;width:5px;height:5px;border-radius:50%;background:#E0806E"></span>
+                <span style="font:400 13px/1.4 Manrope,sans-serif;color:#EFB0A2">Incorrect email or password.</span>
+              </div>
+            </sc-if>
+
+            <button type="submit" disabled="{{ busy }}" style="margin-top:4px;height:52px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 420ms both;border:none;border-radius:13px;background:#3ECF8E;color:#062018;font:600 15px/1 Manrope,sans-serif;letter-spacing:0.005em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform 160ms cubic-bezier(.2,.7,.25,1), filter 160ms ease, box-shadow 160ms ease;box-shadow:0 10px 26px -14px rgba(62,207,142,0.75)" style-hover="filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 16px 34px -14px rgba(62,207,142,0.85)" style-active="transform:translateY(0);filter:brightness(0.98)">
+              <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+                <span style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(6,32,24,0.28);border-top-color:#062018;animation:wr-spin 700ms linear infinite"></span>
+              </sc-if>
+              {{ buttonLabel }}
+            </button>
+          </form>
+
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center;padding-top:2px;animation:wr-field 620ms cubic-bezier(.2,.7,.25,1) 500ms both">
+            <p style="margin:0;font:400 13px/1 Manrope,sans-serif;color:rgba(244,246,245,0.5)">Don’t have an account? <a href="#" style="font-weight:600">Create account</a></p>
+            <span style="font:400 11px/1 Manrope,sans-serif;color:rgba(244,246,245,0.3)">Customer or mechanic account</span>
+          </div>
+        </div>
+
+        <sc-if value="{{ succeeded }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;border-radius:24px;background:rgba(18,20,20,0.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:wr-rise 420ms cubic-bezier(.2,.7,.25,1) both">
+            <div style="position:relative;display:flex;align-items:center;justify-content:center">
+              <span style="position:absolute;width:34px;height:34px;border-radius:50%;border:1px solid rgba(62,207,142,0.6);animation:wr-ring 1500ms cubic-bezier(.2,.7,.25,1) 220ms infinite"></span>
+              <span style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(62,207,142,0.5);background:rgba(62,207,142,0.12);display:flex;align-items:center;justify-content:center;color:#3ECF8E;font:500 15px/1 Manrope,sans-serif;animation:wr-pop 460ms cubic-bezier(.2,.7,.25,1) both">✓</span>
+            </div>
+            <span style="font:500 15px/1 Manrope,sans-serif;animation:wr-field 460ms cubic-bezier(.2,.7,.25,1) 140ms both">Signed in</span>
+            <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;color:rgba(244,246,245,0.4);animation:wr-field 460ms cubic-bezier(.2,.7,.25,1) 240ms both">OPENING WRENCH</span>
+          </div>
+        </sc-if>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;focus&quot;,&quot;loading&quot;,&quot;error&quot;,&quot;success&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo states&quot;},&quot;demoOutcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;success&quot;,&quot;error&quot;],&quot;default&quot;:&quot;success&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo states&quot;},&quot;showProductFlow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    this.state = { email: '', password: '', status: 'idle', narrow: w < 900, focusField: null };
+  }
+  componentDidMount() {
+    this._r = () => {
+      const n = window.innerWidth < 900;
+      if (n !== this.state.narrow) this.setState({ narrow: n });
+    };
+    window.addEventListener('resize', this._r);
+    const s = this.props.state;
+    if (s === 'loading') this.setState({ status: 'loading', email: 'ravi@wrench.app', password: 'secret12' });
+    else if (s === 'error') this.setState({ status: 'error', email: 'ravi@wrench.app', password: 'secret12' });
+    else if (s === 'success') this.setState({ status: 'success', email: 'ravi@wrench.app', password: 'secret12' });
+    else if (s === 'focus') setTimeout(() => {
+      const el = document.querySelector('input[type=email]');
+      if (el) el.focus();
+    }, 260);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._r); if (this._t) clearTimeout(this._t); }
+
+  submit = (e) => {
+    if (e) e.preventDefault();
+    if (this.state.status === 'loading') return;
+    this.setState({ status: 'loading' });
+    this._t = setTimeout(() => {
+      const ok = this.props.demoOutcome !== 'error';
+      this.setState({ status: ok ? 'success' : 'error' });
+      if (ok) this._t = setTimeout(() => this.setState({ status: 'idle' }), 2600);
+    }, 1500);
+  };
+
+  renderVals() {
+    const st = this.state.status;
+    const narrow = this.state.narrow;
+    const full = this.props.showProductFlow !== false && !narrow;
+    const ff = this.state.focusField || (this.props.state === 'focus' ? 'email' : null);
+    const dim = 'rgba(244,246,245,0.45)';
+    return {
+      emailLabelColor: ff === 'email' ? '#3ECF8E' : dim,
+      passwordLabelColor: ff === 'password' ? '#3ECF8E' : dim,
+      emailSweep: ff === 'email' ? 1 : 0,
+      passwordSweep: ff === 'password' ? 1 : 0,
+      focusEmail: () => this.setState({ focusField: 'email' }),
+      focusPassword: () => this.setState({ focusField: 'password' }),
+      blurField: () => this.setState({ focusField: null }),
+      rootDir: narrow ? 'column' : 'row',
+      showFullMock: full,
+      showCompactMock: narrow && this.props.showProductFlow !== false,
+      email: this.state.email,
+      password: this.state.password,
+      onEmail: (e) => this.setState({ email: e.target.value, status: st === 'error' ? 'idle' : st }),
+      onPassword: (e) => this.setState({ password: e.target.value, status: st === 'error' ? 'idle' : st }),
+      onSubmit: this.submit,
+      busy: st === 'loading',
+      hasError: st === 'error',
+      succeeded: st === 'success',
+      buttonLabel: st === 'loading' ? 'Signing in…' : 'Sign In'
+    };
+  }
+}
+</script>
+</body>
+</html>

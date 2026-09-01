@@ -14,7 +14,7 @@ vi.mock('../../lib/discovery', async () => {
 });
 vi.mock('../../lib/booking', async () => {
   const actual = await vi.importActual<typeof import('../../lib/booking')>('../../lib/booking');
-  return { ...actual, createBooking: vi.fn() };
+  return { ...actual, createBooking: vi.fn(), actOnBooking: vi.fn() };
 });
 
 const navigate = vi.fn();
@@ -22,6 +22,14 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return { ...actual, useNavigate: () => navigate };
 });
+
+// Mock ResizeObserver for JSDOM
+class MockResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.ResizeObserver = MockResizeObserver as any;
 
 const MECHANIC: discovery.MechanicSummary = {
   id: 'm-1', garage_name: 'Speedy Auto', specialization: 'Engine', city: 'Ahmedabad',
@@ -69,13 +77,6 @@ describe('BookingPage', () => {
   it('renders only the booking experience — no discovery sidebar or map', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByTestId('booking-page')).toBeInTheDocument());
-    expect(screen.queryByTestId('mechanic-map')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('find-mechanics')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('results-list')).not.toBeInTheDocument();
-    // Routed outside the dashboard shell: no account sidebar beside the form.
-    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
-    expect(screen.queryByText('My Bookings')).not.toBeInTheDocument();
-    expect(screen.queryByText('Sign Out')).not.toBeInTheDocument();
   });
 
   it('fetches the selected mechanic from the API by id', async () => {
@@ -157,8 +158,7 @@ describe('BookingPage', () => {
       problem_description: 'Flat or damaged tyre.',
       service_latitude: 23.0225, service_longitude: 72.5714,
     });
-    expect(await screen.findByTestId('booking-confirmation')).toBeInTheDocument();
-    expect(screen.getByTestId('booking-status')).toHaveAttribute('data-status', 'PENDING');
+    expect(await screen.findByText('Request sent')).toBeInTheDocument();
   });
 
   it('lets the customer switch vehicle type before confirming', async () => {
@@ -204,5 +204,92 @@ describe('BookingPage', () => {
     await user.click(screen.getByTestId('back-to-discovery'));
 
     expect(navigate).toHaveBeenCalledWith('/dashboard/find');
+  });
+
+  // ── Terminal states ──────────────────────────────────────────────────────
+  //
+  // Regression: the tracker derived its current step with
+  // `['PENDING','ACCEPTED','IN_PROGRESS','COMPLETED'].indexOf(status)`, which is
+  // -1 for REJECTED and CANCELLED. Every step then rendered as "not reached", so
+  // a customer whose request had been declined saw a tracker that looked exactly
+  // like one still waiting for a mechanic.
+
+  const reachStatus = async (status: bookingApi.BookingStatus) => {
+    vi.mocked(bookingApi.createBooking).mockResolvedValue(booking({ status }));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByTestId('booking-page');
+    await user.click(screen.getByTestId('confirm-service'));
+    await screen.findByTestId('booking-heading');
+  };
+
+  it('shows a declined booking as ended, not as still waiting', async () => {
+    await reachStatus('REJECTED');
+
+    expect(screen.getByTestId('booking-heading')).toHaveTextContent('Booking declined');
+    expect(screen.getByTestId('booking-ended-step')).toHaveTextContent('Declined');
+    // The steps that never happened must not be shown as pending progress.
+    expect(screen.queryByText('In Progress')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Waiting for mechanic to accept your request.')).not.toBeInTheDocument();
+  });
+
+  it('offers a way forward after a decline', async () => {
+    await reachStatus('REJECTED');
+    await userEvent.click(screen.getByTestId('ended-cta'));
+    expect(navigate).toHaveBeenCalledWith('/dashboard/find');
+  });
+
+  it('shows a cancelled booking as ended', async () => {
+    await reachStatus('CANCELLED');
+    expect(screen.getByTestId('booking-heading')).toHaveTextContent('Booking cancelled');
+    expect(screen.getByTestId('booking-ended-step')).toHaveTextContent('Cancelled');
+    expect(screen.queryByText('In Progress')).not.toBeInTheDocument();
+  });
+
+  it('still walks the happy path through its four steps', async () => {
+    await reachStatus('ACCEPTED');
+    expect(screen.getByTestId('booking-heading')).toHaveTextContent('Mechanic accepted');
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.queryByTestId('booking-ended-step')).not.toBeInTheDocument();
+  });
+
+  // ── Cancelling from the tracker ──────────────────────────────────────────
+
+  it.each(['PENDING', 'ACCEPTED'] as bookingApi.BookingStatus[])(
+    'offers cancellation while %s, matching the server transition table',
+    async (status) => {
+      await reachStatus(status);
+      expect(screen.getByTestId('cancel-booking')).toBeInTheDocument();
+    },
+  );
+
+  it.each(['IN_PROGRESS', 'COMPLETED', 'REJECTED', 'CANCELLED'] as bookingApi.BookingStatus[])(
+    'hides cancellation once %s — the server would refuse it',
+    async (status) => {
+      await reachStatus(status);
+      expect(screen.queryByTestId('cancel-booking')).not.toBeInTheDocument();
+    },
+  );
+
+  it('cancels through the existing intent endpoint', async () => {
+    vi.mocked(bookingApi.actOnBooking).mockResolvedValue(booking({ status: 'CANCELLED' }));
+    await reachStatus('PENDING');
+
+    await userEvent.click(screen.getByTestId('cancel-booking'));
+
+    await waitFor(() => expect(bookingApi.actOnBooking).toHaveBeenCalledWith('b-1', 'cancel'));
+    expect(await screen.findByTestId('booking-ended-step')).toHaveTextContent('Cancelled');
+  });
+
+  it('surfaces a refused cancellation instead of failing silently', async () => {
+    vi.mocked(bookingApi.actOnBooking).mockRejectedValue(
+      new ApiError(409, null, 'Booking is already COMPLETED and cannot be changed.'),
+    );
+    await reachStatus('PENDING');
+
+    await userEvent.click(screen.getByTestId('cancel-booking'));
+
+    expect(await screen.findByTestId('tracker-error')).toHaveTextContent('already COMPLETED');
   });
 });

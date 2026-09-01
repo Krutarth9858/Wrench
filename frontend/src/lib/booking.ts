@@ -25,6 +25,25 @@ export const STATUS_TONES: Record<BookingStatus, string> = {
   REJECTED: 'bg-red-500/10 border-red-500/30 text-red-300',
 };
 
+/**
+ * Mirrors the customer half of the server's transition table
+ * (`app/services/booking_state.py`): a customer may withdraw until the mechanic
+ * actually starts work. The server remains the authority — this only decides
+ * whether the UI offers the action.
+ */
+export const CANCELLABLE_STATUSES: ReadonlySet<BookingStatus> = new Set<BookingStatus>([
+  'PENDING', 'ACCEPTED',
+]);
+
+/** Statuses the booking can never leave. */
+export const TERMINAL_STATUSES: ReadonlySet<BookingStatus> = new Set<BookingStatus>([
+  'COMPLETED', 'CANCELLED', 'REJECTED',
+]);
+
+/** A booking that ended without the service being delivered. */
+export const isEndedEarly = (status: BookingStatus): boolean =>
+  status === 'REJECTED' || status === 'CANCELLED';
+
 export interface BookingVehicle {
   id: string;
   vehicle_type: VehicleType;

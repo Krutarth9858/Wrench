@@ -5,7 +5,7 @@
  * REST refetch by the consumer, and every (re)connection does the same. If the
  * socket never connects the UI still works, just without live updates.
  */
-import { API_BASE_URL, getAuthToken } from './api';
+import { API_BASE_URL, apiFetchData, getAuthToken } from './api';
 
 export const BOOKING_EVENTS = [
   'BOOKING_CREATED', 'BOOKING_ACCEPTED', 'BOOKING_REJECTED',
@@ -38,9 +38,16 @@ const isBookingEvent = (value: unknown): value is BookingEvent => {
   );
 };
 
-function socketUrl(token: string): string {
+/**
+ * The handshake cannot carry an Authorization header, so we trade the access
+ * token for a single-use ticket over an ordinary authenticated POST. Only the
+ * ticket reaches the URL, and it is dead the moment it is redeemed — the access
+ * token itself never appears in a query string, log or history entry.
+ */
+async function socketUrl(): Promise<string> {
+  const { ticket } = await apiFetchData<{ ticket: string }>('/ws/ticket', { method: 'POST' });
   const base = API_BASE_URL.replace(/^http/, 'ws');
-  return `${base}/ws/bookings?token=${encodeURIComponent(token)}`;
+  return `${base}/ws/bookings?ticket=${encodeURIComponent(ticket)}`;
 }
 
 /**
@@ -55,15 +62,16 @@ export function subscribeToBookings({ onEvent, onResync, onStateChange }: Handle
 
   const setState = (state: ConnectionState) => onStateChange?.(state);
 
-  const connect = () => {
+  const connect = async () => {
     if (disposed) return;
-    const token = getAuthToken();
-    if (!token) return; // signed out; nothing to subscribe to
+    if (!getAuthToken()) return; // signed out; nothing to subscribe to
 
     setState('connecting');
     let ws: WebSocket;
     try {
-      ws = new WebSocket(socketUrl(token));
+      const url = await socketUrl();
+      if (disposed) return; // signed out or unmounted while minting the ticket
+      ws = new WebSocket(url);
     } catch {
       scheduleReconnect();
       return;
@@ -100,10 +108,10 @@ export function subscribeToBookings({ onEvent, onResync, onStateChange }: Handle
     if (disposed) return;
     retry += 1;
     const delay = Math.min(1000 * 2 ** (retry - 1), 15_000);
-    timer = setTimeout(connect, delay);
+    timer = setTimeout(() => void connect(), delay);
   };
 
-  connect();
+  void connect();
 
   return () => {
     disposed = true;

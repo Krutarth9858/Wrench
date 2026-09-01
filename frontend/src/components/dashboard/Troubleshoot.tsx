@@ -6,9 +6,10 @@ import {
   type DiagnosticSession, type Severity,
 } from '../../lib/diagnostics';
 import { VEHICLE_TYPE_LABELS, type VehicleType } from '../../lib/mechanic';
+import { cn } from '../../lib/utils';
 
 const FIELD =
-  'w-full bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-all';
+  'w-full glass-card px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-all';
 const LABEL = 'text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500';
 const VEHICLE_ICONS: Record<VehicleType, string> = { BIKE: '🛵', CAR: '🚗' };
 
@@ -70,7 +71,7 @@ export default function Troubleshoot() {
   if (!session) {
     return (
       <div data-testid="troubleshoot"
-        className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5">
+        className="relative overflow-hidden glass-panel p-8">
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-3 block">
           AI vehicle troubleshooter
         </span>
@@ -133,7 +134,7 @@ export default function Troubleshoot() {
 
   return (
     <div data-testid="troubleshoot" className="space-y-6">
-      <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] border border-white/5">
+      <div className="relative overflow-hidden glass-panel">
         <header className="px-8 pt-8 pb-4 border-b border-white/5">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
             AI vehicle troubleshooter
@@ -149,11 +150,12 @@ export default function Troubleshoot() {
           {session.messages.map((m) => (
             <div key={m.id} data-testid={`msg-${m.role}`}
               className={m.role === 'USER' ? 'flex justify-end' : 'flex justify-start'}>
-              <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                m.role === 'USER'
+              <div className={cn(
+                  'rounded-2xl px-5 py-3.5 max-w-[85%] text-[15px] leading-relaxed',
+                  m.role === 'USER'
                   ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-50'
-                  : 'bg-white/[0.04] border border-white/10 text-zinc-200'
-              }`}>
+                  : 'glass-base bg-white/[0.04] border border-white/10 text-zinc-200 backdrop-blur-md'
+                )}>
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1 opacity-50">
                   {m.role === 'USER' ? 'You' : 'Wrench AI'}
                 </p>
@@ -200,7 +202,7 @@ export default function Troubleshoot() {
       {/* Structured result */}
       {(hasCauses || result?.needs_mechanic) && (
         <div data-testid="diagnostic-result"
-          className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5 space-y-5">
+          className="relative overflow-hidden glass-panel p-8 space-y-5">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 block">
             Preliminary assessment
           </span>

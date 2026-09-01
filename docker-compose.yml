@@ -27,7 +27,7 @@ services:
       # Required. Compose fails fast if SECRET_KEY is not set in the environment
       # or in a local .env file; there is deliberately no default.
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set (see backend/.env.example)}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:5173}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:5174}
     depends_on:
       - db
 

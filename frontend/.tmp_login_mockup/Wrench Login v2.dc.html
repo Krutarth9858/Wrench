@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#07080A;}
+*{box-sizing:border-box;}
+a{color:#3ECF8E;text-decoration:none;}
+a:hover{color:#7CE7BA;}
+input::placeholder{color:rgba(240,244,242,0.30);}
+@keyframes v2-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes v2-mask{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes v2-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-96px,-96px,0)}}
+@keyframes v2-radar{0%{opacity:0.55;transform:scale(0.35)}100%{opacity:0;transform:scale(2.6)}}
+@keyframes v2-dash{to{background-position-x:-24px}}
+@keyframes v2-spin{to{transform:rotate(360deg)}}
+@keyframes v2-sweep{from{transform:translateX(-130%)}to{transform:translateX(340%)}}
+@keyframes v2-pop{0%{opacity:0;transform:scale(.6)}62%{transform:scale(1.07)}100%{opacity:1;transform:scale(1)}}
+@keyframes v2-beam{0%,100%{opacity:.25}50%{opacity:.9}}
+@keyframes v2-scan{0%{transform:translateY(-10%)}100%{transform:translateY(760%)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="position:relative;min-height:100vh;overflow:hidden;background:#07080A;color:#F0F4F2;font-family:Sora,system-ui,sans-serif;-webkit-font-smoothing:antialiased">
+
+  <div style="position:absolute;inset:-120px;pointer-events:none;opacity:0.42;background-image:linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);background-size:96px 96px;animation:v2-drift 26s linear infinite;mask-image:radial-gradient(110% 95% at 24% 30%, #000 0%, transparent 72%);-webkit-mask-image:radial-gradient(110% 95% at 24% 30%, #000 0%, transparent 72%)"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(100% 78% at 8% 4%, rgba(62,207,142,0.13), transparent 58%),radial-gradient(80% 60% at 96% 92%, rgba(90,130,255,0.06), transparent 62%)"></div>
+  <div style="position:absolute;left:6%;top:-30%;width:2px;height:160%;transform:rotate(15deg);pointer-events:none;background:linear-gradient(180deg, transparent, rgba(62,207,142,0.5), transparent);animation:v2-beam 7s ease-in-out infinite"></div>
+  <div style="position:absolute;left:14%;top:-30%;width:1px;height:160%;transform:rotate(15deg);pointer-events:none;background:linear-gradient(180deg, transparent, rgba(255,255,255,0.14), transparent);animation:v2-beam 9s ease-in-out 1.4s infinite"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 260px 70px rgba(0,0,0,0.8)"></div>
+
+  <div style="position:relative;display:flex;align-items:stretch;min-height:100vh;flex-direction: {{ rootDir }}">
+
+    <section style="flex:1.2 1 520px;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,3.4vh,42px);padding:clamp(34px,4.6vw,78px) clamp(26px,4.4vw,62px)">
+      <header style="display:flex;align-items:center;gap:14px;animation:v2-rise 700ms cubic-bezier(.2,.75,.3,1) both">
+        <div style="position:relative;width:30px;height:30px;border-radius:10px;border:1px solid rgba(62,207,142,0.5);background:rgba(62,207,142,0.09);display:flex;align-items:center;justify-content:center;font:600 14px/1 Sora,sans-serif;color:#3ECF8E;overflow:hidden">W
+          <div style="position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg, transparent, rgba(62,207,142,0.9), transparent);animation:v2-scan 4.5s ease-in-out infinite"></div>
+        </div>
+        <span style="font:600 17px/1 Sora,sans-serif;letter-spacing:0.2em">WRENCH</span>
+        <span style="width:1px;height:14px;background:rgba(255,255,255,0.14)"></span>
+        <span style="font:500 9.5px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.26em;color:rgba(240,244,242,0.4)">ROADSIDE ASSISTANCE</span>
+      </header>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <h1 style="margin:0;max-width:15ch;font:600 clamp(38px,4.8vw,66px)/1.02 Sora,sans-serif;letter-spacing:-0.035em;text-wrap:pretty;animation:v2-mask 1100ms cubic-bezier(.16,.9,.2,1) 160ms both">Help is closer than you think.</h1>
+        <p style="margin:0;max-width:36ch;font:300 clamp(14px,1.05vw,16.5px)/1.7 Sora,sans-serif;color:rgba(240,244,242,0.55);animation:v2-rise 800ms cubic-bezier(.2,.75,.3,1) 420ms both">Diagnose the problem. Find a nearby mechanic. Get back on the road.</p>
+      </div>
+
+      <sc-if value="{{ showFlow }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:0;width:100%;max-width:432px;animation:v2-rise 900ms cubic-bezier(.2,.75,.3,1) 560ms both">
+
+          <div style="padding:15px 17px;border-radius:16px;transition:opacity 600ms ease, border-color 600ms ease, background 600ms ease, transform 600ms cubic-bezier(.2,.75,.3,1);border:1px solid {{ s1.border }};background: {{ s1.bg }};opacity: {{ s1.op }};transform: {{ s1.tf }}">
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(240,244,242,0.4)">CUSTOMER PROBLEM</span>
+              <span style="font:400 15px/1.4 Sora,sans-serif">“My bike won’t start.”</span>
+            </div>
+          </div>
+
+          <div style="height:18px;margin-left:24px;width:1px;background:repeating-linear-gradient(180deg, rgba(255,255,255,0.22) 0 4px, transparent 4px 8px)"></div>
+
+          <div style="padding:15px 17px;border-radius:16px;transition:opacity 600ms ease, border-color 600ms ease, background 600ms ease, transform 600ms cubic-bezier(.2,.75,.3,1);border:1px solid {{ s2.border }};background: {{ s2.bg }};opacity: {{ s2.op }};transform: {{ s2.tf }}">
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(62,207,142,0.85)">WRENCH AI</span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font:400 15px/1.4 Sora,sans-serif">“Let’s check a few things.”</span>
+                <span style="display:flex;gap:3px;opacity: {{ s2.op }}">
+                  <span style="width:4px;height:4px;border-radius:50%;background:#3ECF8E;animation:v2-beam 1.2s ease-in-out infinite"></span>
+                  <span style="width:4px;height:4px;border-radius:50%;background:#3ECF8E;animation:v2-beam 1.2s ease-in-out .2s infinite"></span>
+                  <span style="width:4px;height:4px;border-radius:50%;background:#3ECF8E;animation:v2-beam 1.2s ease-in-out .4s infinite"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:18px;margin-left:24px;width:1px;background:repeating-linear-gradient(180deg, rgba(255,255,255,0.22) 0 4px, transparent 4px 8px)"></div>
+
+          <div style="padding:15px 17px;border-radius:16px;transition:opacity 600ms ease, border-color 600ms ease, background 600ms ease, transform 600ms cubic-bezier(.2,.75,.3,1);border:1px solid {{ s3.border }};background: {{ s3.bg }};opacity: {{ s3.op }};transform: {{ s3.tf }}">
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(240,244,242,0.4)">DIAGNOSTIC</span>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.45)">Possible issue</span>
+                <span style="font:500 15px/1.3 Sora,sans-serif">Battery / starter system</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                  <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.45)">Confidence</span>
+                  <span style="font:500 11px/1 'JetBrains Mono',ui-monospace,monospace;color:#3ECF8E">60%</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden">
+                  <div style="height:100%;border-radius:2px;background:linear-gradient(90deg, rgba(62,207,142,0.45), #3ECF8E);transition:width 1400ms cubic-bezier(.16,.9,.2,1);width: {{ confidence }}"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:18px;margin-left:24px;width:1px;background:repeating-linear-gradient(180deg, rgba(255,255,255,0.22) 0 4px, transparent 4px 8px)"></div>
+
+          <div style="padding:16px 17px;border-radius:16px;box-shadow:0 24px 60px -40px rgba(0,0,0,0.95);transition:opacity 600ms ease, border-color 600ms ease, background 600ms ease, transform 600ms cubic-bezier(.2,.75,.3,1);border:1px solid {{ s4.border }};background: {{ s4.bg }};opacity: {{ s4.op }};transform: {{ s4.tf }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.22em;color:rgba(240,244,242,0.4)">MECHANIC MATCH</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <span style="font:600 16px/1.2 Sora,sans-serif">MV Motors</span>
+                  <div style="display:flex;align-items:center;gap:9px;font:300 12px/1 Sora,sans-serif;color:rgba(240,244,242,0.5)">
+                    <span style="color:rgba(240,244,242,0.78)">★ 4.9</span>
+                    <span style="width:3px;height:3px;border-radius:50%;background:rgba(240,244,242,0.25)"></span>
+                    <span>2.4 km away</span>
+                  </div>
+                </div>
+                <span style="flex:none;padding:5px 10px;border-radius:999px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.16em;color:#3ECF8E">AVAILABLE</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding-top:13px;border-top:1px solid rgba(255,255,255,0.06)">
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;width:12px;height:12px;flex:none">
+                  <span style="position:absolute;width:12px;height:12px;border-radius:50%;border:1px solid rgba(240,244,242,0.5);animation:v2-radar 2.8s cubic-bezier(.2,.7,.3,1) infinite"></span>
+                  <span style="width:6px;height:6px;border-radius:50%;background:#F0F4F2"></span>
+                </div>
+                <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.6)">You</span>
+                <div style="flex:1;height:1px;background-image:repeating-linear-gradient(90deg, rgba(62,207,142,0.7) 0 7px, transparent 7px 12px);animation:v2-dash 900ms linear infinite"></div>
+                <span style="font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;color:rgba(240,244,242,0.42)">2.4 km</span>
+                <div style="flex:1;height:1px;background-image:repeating-linear-gradient(90deg, rgba(62,207,142,0.7) 0 7px, transparent 7px 12px);animation:v2-dash 900ms linear infinite"></div>
+                <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.78)">MV Motors</span>
+                <span style="width:7px;height:7px;border-radius:2px;background:#3ECF8E;flex:none;box-shadow:0 0 0 4px rgba(62,207,142,0.16)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCompact }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+          <span style="width:7px;height:7px;border-radius:50%;background:#F0F4F2;flex:none"></span>
+          <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.55)">You</span>
+          <div style="flex:1;height:1px;background-image:repeating-linear-gradient(90deg, rgba(62,207,142,0.7) 0 7px, transparent 7px 12px);animation:v2-dash 900ms linear infinite"></div>
+          <span style="font:500 10px/1 'JetBrains Mono',ui-monospace,monospace;color:rgba(240,244,242,0.42)">2.4 km</span>
+          <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.8)">MV Motors</span>
+          <span style="width:7px;height:7px;border-radius:2px;background:#3ECF8E;flex:none"></span>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="flex:1 1 440px;display:flex;align-items:center;justify-content:center;padding:clamp(30px,4vw,64px) clamp(22px,3.4vw,56px)">
+      <div style="position:relative;width:100%;max-width:416px;border-radius:26px;padding:clamp(26px,2.6vw,36px);background:rgba(22,25,26,0.68);backdrop-filter:blur(34px) saturate(150%);-webkit-backdrop-filter:blur(34px) saturate(150%);border:1px solid rgba(255,255,255,0.10);box-shadow:0 1px 0 0 rgba(255,255,255,0.10) inset, 0 -1px 0 0 rgba(0,0,0,0.45) inset, 0 46px 100px -46px rgba(0,0,0,0.95);animation:v2-rise 760ms cubic-bezier(.16,.9,.2,1) both">
+
+        <div style="position:absolute;top:0;left:18%;right:18%;height:1px;overflow:hidden;pointer-events:none">
+          <div style="width:40%;height:100%;background:linear-gradient(90deg, transparent, rgba(124,231,186,0.95), transparent);animation:v2-sweep 5.5s cubic-bezier(.45,0,.55,1) infinite"></div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <div style="display:flex;flex-direction:column;gap:7px;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 120ms both">
+            <h2 style="margin:0;font:600 27px/1.12 Sora,sans-serif;letter-spacing:-0.028em">Welcome back</h2>
+            <p style="margin:0;font:300 13.5px/1.5 Sora,sans-serif;color:rgba(240,244,242,0.5)">Sign in to Wrench</p>
+          </div>
+
+          <form onSubmit="{{ onSubmit }}" style="display:flex;flex-direction:column;gap:16px">
+            <label style="display:flex;flex-direction:column;gap:8px;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 220ms both">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;transition:color 240ms ease;color: {{ emailLabel }}">EMAIL</span>
+              <div style="position:relative">
+                <input type="email" placeholder="Enter your email" autoComplete="email" value="{{ email }}" onChange="{{ onEmail }}" onFocus="{{ focusEmail }}" onBlur="{{ blurField }}" style="width:100%;height:51px;padding:0 15px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:#F0F4F2;font:300 15px/1 Sora,sans-serif;outline:none;transition:border-color 240ms ease, box-shadow 300ms cubic-bezier(.2,.75,.3,1), background 240ms ease" style-focus="border-color:rgba(62,207,142,0.6);box-shadow:0 0 0 3px rgba(62,207,142,0.14);background:rgba(255,255,255,0.08)" style-hover="border-color:rgba(255,255,255,0.19)">
+                <div style="position:absolute;left:14px;right:14px;bottom:0;height:1px;overflow:hidden;pointer-events:none;transition:opacity 240ms ease;opacity: {{ emailSweep }}">
+                  <div style="width:32%;height:100%;background:linear-gradient(90deg, transparent, #3ECF8E, transparent);animation:v2-sweep 1500ms cubic-bezier(.45,0,.55,1) infinite"></div>
+                </div>
+              </div>
+            </label>
+
+            <label style="display:flex;flex-direction:column;gap:8px;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 300ms both">
+              <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;transition:color 240ms ease;color: {{ passwordLabel }}">PASSWORD</span>
+              <div style="position:relative">
+                <input type="password" placeholder="Enter your password" autoComplete="current-password" value="{{ password }}" onChange="{{ onPassword }}" onFocus="{{ focusPassword }}" onBlur="{{ blurField }}" style="width:100%;height:51px;padding:0 15px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:#F0F4F2;font:300 15px/1 Sora,sans-serif;outline:none;transition:border-color 240ms ease, box-shadow 300ms cubic-bezier(.2,.75,.3,1), background 240ms ease" style-focus="border-color:rgba(62,207,142,0.6);box-shadow:0 0 0 3px rgba(62,207,142,0.14);background:rgba(255,255,255,0.08)" style-hover="border-color:rgba(255,255,255,0.19)">
+                <div style="position:absolute;left:14px;right:14px;bottom:0;height:1px;overflow:hidden;pointer-events:none;transition:opacity 240ms ease;opacity: {{ passwordSweep }}">
+                  <div style="width:32%;height:100%;background:linear-gradient(90deg, transparent, #3ECF8E, transparent);animation:v2-sweep 1500ms cubic-bezier(.45,0,.55,1) infinite"></div>
+                </div>
+              </div>
+            </label>
+
+            <div style="display:flex;justify-content:flex-end;margin-top:-4px;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 360ms both">
+              <a href="#" style="font:300 12.5px/1 Sora,sans-serif;color:rgba(240,244,242,0.5)" style-hover="color:#3ECF8E">Forgot password?</a>
+            </div>
+
+            <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;background:rgba(224,120,100,0.09);border:1px solid rgba(224,120,100,0.26);animation:v2-rise 260ms ease both">
+                <span style="flex:none;width:5px;height:5px;border-radius:50%;background:#E0806E"></span>
+                <span style="font:300 13px/1.4 Sora,sans-serif;color:#EFB2A4">Incorrect email or password.</span>
+              </div>
+            </sc-if>
+
+            <button type="submit" disabled="{{ busy }}" style="position:relative;overflow:hidden;margin-top:4px;height:53px;border:none;border-radius:14px;background:#3ECF8E;color:#052018;font:600 15px/1 Sora,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 440ms both;transition:transform 180ms cubic-bezier(.2,.75,.3,1), filter 180ms ease, box-shadow 220ms ease;box-shadow:0 12px 30px -14px rgba(62,207,142,0.8)" style-hover="filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 20px 40px -14px rgba(62,207,142,0.9)" style-active="transform:translateY(0);filter:brightness(.97)">
+              <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+                <span style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(5,32,24,0.26);border-top-color:#052018;animation:v2-spin 680ms linear infinite"></span>
+              </sc-if>
+              {{ buttonLabel }}
+            </button>
+          </form>
+
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center;animation:v2-rise 640ms cubic-bezier(.2,.75,.3,1) 520ms both">
+            <p style="margin:0;font:300 13px/1 Sora,sans-serif;color:rgba(240,244,242,0.5)">Don’t have an account? <a href="#" style="font-weight:500">Create account</a></p>
+            <span style="font:300 11px/1 Sora,sans-serif;color:rgba(240,244,242,0.28)">Customer or mechanic account</span>
+          </div>
+        </div>
+
+        <sc-if value="{{ succeeded }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;border-radius:26px;background:rgba(16,19,19,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:v2-rise 420ms cubic-bezier(.16,.9,.2,1) both">
+            <div style="position:relative;display:flex;align-items:center;justify-content:center">
+              <span style="position:absolute;width:36px;height:36px;border-radius:50%;border:1px solid rgba(62,207,142,0.6);animation:v2-radar 1.9s cubic-bezier(.2,.7,.3,1) infinite"></span>
+              <span style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(62,207,142,0.5);background:rgba(62,207,142,0.12);display:flex;align-items:center;justify-content:center;color:#3ECF8E;font:500 16px/1 Sora,sans-serif;animation:v2-pop 460ms cubic-bezier(.2,.75,.3,1) both">✓</span>
+            </div>
+            <span style="font:500 15px/1 Sora,sans-serif;animation:v2-rise 460ms ease 140ms both">Signed in</span>
+            <span style="font:500 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.2em;color:rgba(240,244,242,0.4);animation:v2-rise 460ms ease 240ms both">OPENING WRENCH</span>
+          </div>
+        </sc-if>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;focus&quot;,&quot;loading&quot;,&quot;error&quot;,&quot;success&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo states&quot;},&quot;demoOutcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;success&quot;,&quot;error&quot;],&quot;default&quot;:&quot;success&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo states&quot;},&quot;playFlow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Motion&quot;},&quot;showProductFlow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    this.state = { email: '', password: '', status: 'idle', narrow: w < 900, focusField: null, step: 0 };
+  }
+  componentDidMount() {
+    this._r = () => {
+      const n = window.innerWidth < 900;
+      if (n !== this.state.narrow) this.setState({ narrow: n });
+    };
+    window.addEventListener('resize', this._r);
+    if (this.props.playFlow !== false) {
+      this._i = setInterval(() => this.setState(s => ({ step: (s.step + 1) % 5 })), 1900);
+      setTimeout(() => this.setState({ step: 1 }), 900);
+    } else {
+      this.setState({ step: 4 });
+    }
+    const s = this.props.state;
+    if (s && s !== 'default' && s !== 'focus') {
+      this.setState({ status: s, email: 'ravi@wrench.app', password: 'secret12' });
+    } else if (s === 'focus') {
+      setTimeout(() => { const el = document.querySelector('input[type=email]'); if (el) el.focus(); }, 300);
+    }
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._r);
+    if (this._i) clearInterval(this._i);
+    if (this._t) clearTimeout(this._t);
+  }
+
+  submit = (e) => {
+    if (e) e.preventDefault();
+    if (this.state.status === 'loading') return;
+    this.setState({ status: 'loading' });
+    this._t = setTimeout(() => {
+      const ok = this.props.demoOutcome !== 'error';
+      this.setState({ status: ok ? 'success' : 'error' });
+      if (ok) this._t = setTimeout(() => this.setState({ status: 'idle' }), 2800);
+    }, 1500);
+  };
+
+  stepStyle(i) {
+    const step = this.state.step;
+    const reached = step >= i;
+    const active = step === i;
+    return {
+      op: reached ? 1 : 0.18,
+      tf: reached ? 'translateY(0)' : 'translateY(8px)',
+      border: active ? 'rgba(62,207,142,0.42)' : reached ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)',
+      bg: active ? 'rgba(62,207,142,0.07)' : reached ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.015)'
+    };
+  }
+
+  renderVals() {
+    const st = this.state.status;
+    const narrow = this.state.narrow;
+    const flow = this.props.showProductFlow !== false;
+    const ff = this.state.focusField || (this.props.state === 'focus' ? 'email' : null);
+    const dim = 'rgba(240,244,242,0.45)';
+    return {
+      rootDir: narrow ? 'column' : 'row',
+      showFlow: flow && !narrow,
+      showCompact: flow && narrow,
+      s1: this.stepStyle(1), s2: this.stepStyle(2), s3: this.stepStyle(3), s4: this.stepStyle(4),
+      confidence: this.state.step >= 3 ? '60%' : '0%',
+      email: this.state.email,
+      password: this.state.password,
+      emailLabel: ff === 'email' ? '#3ECF8E' : dim,
+      passwordLabel: ff === 'password' ? '#3ECF8E' : dim,
+      emailSweep: ff === 'email' ? 1 : 0,
+      passwordSweep: ff === 'password' ? 1 : 0,
+      focusEmail: () => this.setState({ focusField: 'email' }),
+      focusPassword: () => this.setState({ focusField: 'password' }),
+      blurField: () => this.setState({ focusField: null }),
+      onEmail: (e) => this.setState({ email: e.target.value, status: st === 'error' ? 'idle' : st }),
+      onPassword: (e) => this.setState({ password: e.target.value, status: st === 'error' ? 'idle' : st }),
+      onSubmit: this.submit,
+      busy: st === 'loading',
+      hasError: st === 'error',
+      succeeded: st === 'success',
+      buttonLabel: st === 'loading' ? 'Signing in…' : 'Sign In'
+    };
+  }
+}
+</script>
+</body>
+</html>

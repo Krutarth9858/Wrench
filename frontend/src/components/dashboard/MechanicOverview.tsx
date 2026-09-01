@@ -42,7 +42,7 @@ export default function MechanicOverview() {
   if (loading) {
     return (
       <div data-testid="overview-loading"
-        className="bg-[#18181B] rounded-[40px] p-8 border border-white/5 text-zinc-500 text-sm">
+        className="glass-panel p-8 text-zinc-500 text-sm">
         Loading your dashboard…
       </div>
     );
@@ -56,7 +56,7 @@ export default function MechanicOverview() {
 
   return (
     <div data-testid="mechanic-overview" className="space-y-6">
-      <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5">
+      <div className="relative overflow-hidden glass-panel p-8">
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-3 block">
           Dispatch
         </span>
@@ -72,7 +72,7 @@ export default function MechanicOverview() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {tiles.map(([label, count, href]) => (
             <Link key={label} to={href} data-testid={`tile-${label.split(' ')[0].toLowerCase()}`}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:border-white/25 transition-colors">
+              className="glass-card p-5 hover:border-white/25 transition-colors">
               <p className="text-3xl font-semibold text-white tracking-tight">{count}</p>
               <p className="text-zinc-500 text-sm font-light mt-1">{label}</p>
             </Link>
@@ -92,13 +92,13 @@ export default function MechanicOverview() {
 
       {/* What needs attention first */}
       {pending.length > 0 && (
-        <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5">
+        <div className="relative overflow-hidden glass-panel p-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-medium">Newest request</h3>
             <Link to="/dashboard/requests" className="text-emerald-400 text-sm">View all</Link>
           </div>
           <div data-testid="overview-newest"
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            className="glass-card p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-white font-medium">{pending[0].problem_description}</p>

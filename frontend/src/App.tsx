@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import NotFound from './pages/NotFound';
 import BookingPage from './components/dashboard/BookingPage';
 import BackendStatus from './components/dev/BackendStatus';
 import { Toaster } from 'sonner';
@@ -84,7 +85,8 @@ const App: React.FC = () => {
             </RequireAuth>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Unknown paths get a real 404 rather than a silent bounce to "/". */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

@@ -20,6 +20,7 @@ from app.models.profile import MechanicProfile
 from app.models.user import User, UserRole
 from app.models.vehicle import FuelType, Vehicle, VehicleType
 from app.services import booking_events as events_module
+from app.services import ws_tickets
 from app.services.booking_events import STATUS_EVENTS, build_event
 from app.services.realtime import ConnectionManager, manager
 
@@ -62,10 +63,15 @@ async def _user(email, role, phone):
         return u
 
 
-async def open_socket(token) -> tuple:
+def sock_ticket(user) -> str:
+    """A real handshake credential for `user`, minted the way the API mints it."""
+    return ws_tickets.issue(user.id)
+
+
+async def open_socket(ticket) -> tuple:
     """Run the endpoint as a background task and wait for the CONNECTED frame."""
     ws = FakeWebSocket()
-    task = asyncio.create_task(ws_endpoint(ws, token=token))
+    task = asyncio.create_task(ws_endpoint(ws, ticket=ticket))
     for _ in range(50):
         if ws.sent or ws.close_code is not None or task.done():
             break
@@ -120,9 +126,9 @@ async def create_booking(client, parties):
 # ------------------------------------------------------------------ authentication
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("token", ["nonsense", "", "a.b.c"])
-async def test_an_invalid_token_is_refused(token):
-    ws, task = await open_socket(token)
+@pytest.mark.parametrize("ticket", ["nonsense", "", "a.b.c"])
+async def test_an_invalid_ticket_is_refused(ticket):
+    ws, task = await open_socket(ticket)
     await close_socket(ws, task)
     assert ws.accepted is False
     assert ws.close_code == 1008
@@ -130,16 +136,43 @@ async def test_an_invalid_token_is_refused(token):
 
 
 @pytest.mark.asyncio
-async def test_a_refresh_token_cannot_open_a_socket(parties):
-    ws, task = await open_socket(create_refresh_token(subject=str(parties["customer"].id)))
+@pytest.mark.parametrize("jwt_factory", [create_refresh_token, create_access_token])
+async def test_a_jwt_is_not_a_valid_ticket(parties, jwt_factory):
+    """Regression: the handshake used to take the access token straight from the
+    query string, which put a live bearer token in every access log. A JWT of any
+    kind must now be worthless as a handshake credential."""
+    ws, task = await open_socket(jwt_factory(subject=str(parties["customer"].id)))
     await close_socket(ws, task)
     assert ws.accepted is False
     assert ws.close_code == 1008
 
 
 @pytest.mark.asyncio
-async def test_a_token_for_an_unknown_user_is_refused():
-    ws, task = await open_socket(create_access_token(subject=str(uuid4())))
+async def test_a_ticket_for_an_unknown_user_is_refused():
+    ws, task = await open_socket(ws_tickets.issue(uuid4()))
+    await close_socket(ws, task)
+    assert ws.accepted is False
+    assert ws.close_code == 1008
+
+
+@pytest.mark.asyncio
+async def test_a_ticket_cannot_be_replayed(parties):
+    """A ticket that leaks into a log must be useless to whoever reads it."""
+    ticket = sock_ticket(parties["customer"])
+    ws, task = await open_socket(ticket)
+    assert ws.accepted is True
+    await close_socket(ws, task)
+
+    replay_ws, replay_task = await open_socket(ticket)
+    await close_socket(replay_ws, replay_task)
+    assert replay_ws.accepted is False
+    assert replay_ws.close_code == 1008
+
+
+@pytest.mark.asyncio
+async def test_an_expired_ticket_is_refused(parties, monkeypatch):
+    monkeypatch.setattr(ws_tickets, "TICKET_TTL_SECONDS", -1)
+    ws, task = await open_socket(ws_tickets.issue(parties["customer"].id))
     await close_socket(ws, task)
     assert ws.accepted is False
     assert ws.close_code == 1008
@@ -147,7 +180,7 @@ async def test_a_token_for_an_unknown_user_is_refused():
 
 @pytest.mark.asyncio
 async def test_an_authenticated_user_connects_and_disconnects(parties):
-    ws, task = await open_socket(parties["customer_token"])
+    ws, task = await open_socket(sock_ticket(parties["customer"]))
     assert ws.accepted is True
     assert ws.sent == [{"type": "CONNECTED"}]
     assert manager.connection_count(parties["customer"].id) == 1
@@ -160,8 +193,8 @@ async def test_an_authenticated_user_connects_and_disconnects(parties):
 
 @pytest.mark.asyncio
 async def test_both_parties_receive_booking_created(client, parties):
-    cust_ws, cust_task = await open_socket(parties["customer_token"])
-    mech_ws, mech_task = await open_socket(parties["mechanic_token"])
+    cust_ws, cust_task = await open_socket(sock_ticket(parties["customer"]))
+    mech_ws, mech_task = await open_socket(sock_ticket(parties["mechanic"]))
 
     booking_id = await create_booking(client, parties)
 
@@ -177,7 +210,7 @@ async def test_both_parties_receive_booking_created(client, parties):
 
 @pytest.mark.asyncio
 async def test_every_transition_reaches_the_customer(client, parties):
-    cust_ws, cust_task = await open_socket(parties["customer_token"])
+    cust_ws, cust_task = await open_socket(sock_ticket(parties["customer"]))
     booking_id = await create_booking(client, parties)
 
     for action, event_type in (("accept", "BOOKING_ACCEPTED"),
@@ -199,7 +232,7 @@ async def test_every_transition_reaches_the_customer(client, parties):
 @pytest.mark.parametrize("action,event_type", [("reject", "BOOKING_REJECTED"),
                                                ("cancel", "BOOKING_CANCELLED")])
 async def test_terminal_transitions_emit_their_event(client, parties, action, event_type):
-    cust_ws, cust_task = await open_socket(parties["customer_token"])
+    cust_ws, cust_task = await open_socket(sock_ticket(parties["customer"]))
     booking_id = await create_booking(client, parties)
     token = parties["mechanic_token"] if action == "reject" else parties["customer_token"]
 
@@ -211,7 +244,7 @@ async def test_terminal_transitions_emit_their_event(client, parties, action, ev
 
 @pytest.mark.asyncio
 async def test_a_failed_transition_emits_no_event(client, parties):
-    cust_ws, cust_task = await open_socket(parties["customer_token"])
+    cust_ws, cust_task = await open_socket(sock_ticket(parties["customer"]))
     booking_id = await create_booking(client, parties)
 
     # start before accept -> 409
@@ -229,8 +262,8 @@ async def test_a_failed_transition_emits_no_event(client, parties):
 @pytest.mark.asyncio
 async def test_an_uninvolved_user_receives_nothing(client, parties):
     outsider = await _user("rt-outsider@e.com", UserRole.CUSTOMER, "+15551110003")
-    out_ws, out_task = await open_socket(create_access_token(subject=str(outsider.id)))
-    cust_ws, cust_task = await open_socket(parties["customer_token"])
+    out_ws, out_task = await open_socket(sock_ticket(outsider))
+    cust_ws, cust_task = await open_socket(sock_ticket(parties["customer"]))
 
     booking_id = await create_booking(client, parties)
     await client.post(f"/api/v1/bookings/{booking_id}/accept",
@@ -246,7 +279,7 @@ async def test_an_uninvolved_user_receives_nothing(client, parties):
 @pytest.mark.asyncio
 async def test_another_mechanic_receives_nothing(client, parties):
     rival = await _user("rt-rival@e.com", UserRole.MECHANIC, "+15551110004")
-    rival_ws, rival_task = await open_socket(create_access_token(subject=str(rival.id)))
+    rival_ws, rival_task = await open_socket(sock_ticket(rival))
 
     await create_booking(client, parties)
 

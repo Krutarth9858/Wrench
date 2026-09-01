@@ -29,11 +29,26 @@ class FakeSocket {
 
 const EVENT: BookingEvent = { type: 'BOOKING_ACCEPTED', booking_id: 'b-1', status: 'ACCEPTED' };
 
+/**
+ * The handshake now mints a single-use ticket over REST before opening the
+ * socket, so connecting is asynchronous. Let those microtasks run without
+ * advancing the fake timers that drive the reconnect backoff.
+ */
+const flush = () => vi.advanceTimersByTimeAsync(0);
+
+const ticketResponse = () =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ status: 'success', message: null, data: { ticket: 'tkt-1', expires_in: 30 } }),
+  } as unknown as Response);
+
 describe('subscribeToBookings', () => {
   beforeEach(() => {
     FakeSocket.instances = [];
     setAuthToken('token-1');
     vi.stubGlobal('WebSocket', FakeSocket as unknown as typeof WebSocket);
+    vi.stubGlobal('fetch', vi.fn(ticketResponse));
     vi.useFakeTimers();
   });
   afterEach(() => {
@@ -42,31 +57,47 @@ describe('subscribeToBookings', () => {
     setAuthToken(null);
   });
 
-  it('connects to the ws endpoint carrying the access token', () => {
+  it('connects with a single-use ticket and never puts the access token in the URL', async () => {
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync: vi.fn() });
-    expect(FakeSocket.last().url).toMatch(/^ws/);
-    expect(FakeSocket.last().url).toContain('/ws/bookings?token=token-1');
+    await flush();
+    const { url } = FakeSocket.last();
+    expect(url).toMatch(/^ws/);
+    expect(url).toContain('/ws/bookings?ticket=tkt-1');
+    // Regression: the access token used to be the query parameter, which put a
+    // live bearer token into every access log.
+    expect(url).not.toContain('token-1');
     dispose();
   });
 
-  it('does not connect when signed out', () => {
-    setAuthToken(null);
+  it('does not open a socket when the ticket request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))));
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync: vi.fn() });
+    await flush();
     expect(FakeSocket.instances).toHaveLength(0);
     dispose();
   });
 
-  it('resyncs over REST on every connection', () => {
+  it('does not connect when signed out', async () => {
+    setAuthToken(null);
+    const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync: vi.fn() });
+    await flush();
+    expect(FakeSocket.instances).toHaveLength(0);
+    dispose();
+  });
+
+  it('resyncs over REST on every connection', async () => {
     const onResync = vi.fn();
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync });
+    await flush();
     FakeSocket.last().open();
     expect(onResync).toHaveBeenCalledTimes(1);
     dispose();
   });
 
-  it('delivers a valid booking event', () => {
+  it('delivers a valid booking event', async () => {
     const onEvent = vi.fn();
     const dispose = subscribeToBookings({ onEvent, onResync: vi.fn() });
+    await flush();
     FakeSocket.last().open();
     FakeSocket.last().emit(EVENT);
     expect(onEvent).toHaveBeenCalledWith(EVENT);
@@ -77,19 +108,21 @@ describe('subscribeToBookings', () => {
     ['not json', 'definitely-not-json'],
     ['unknown type', { type: 'SOMETHING_ELSE', booking_id: 'b', status: 'X' }],
     ['missing fields', { type: 'BOOKING_ACCEPTED' }],
-  ])('ignores a malformed frame (%s)', (_label, payload) => {
+  ])('ignores a malformed frame (%s)', async (_label, payload) => {
     const onEvent = vi.fn();
     const dispose = subscribeToBookings({ onEvent, onResync: vi.fn() });
+    await flush();
     FakeSocket.last().open();
     expect(() => FakeSocket.last().emit(payload)).not.toThrow();
     expect(onEvent).not.toHaveBeenCalled();
     dispose();
   });
 
-  it('reports connection state transitions', () => {
+  it('reports connection state transitions', async () => {
     const onStateChange = vi.fn();
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync: vi.fn(), onStateChange });
     expect(onStateChange).toHaveBeenCalledWith('connecting');
+    await flush();
     FakeSocket.last().open();
     expect(onStateChange).toHaveBeenCalledWith('open');
     FakeSocket.last().close();
@@ -97,15 +130,16 @@ describe('subscribeToBookings', () => {
     dispose();
   });
 
-  it('reconnects with backoff and resyncs again', () => {
+  it('reconnects with backoff and resyncs again', async () => {
     const onResync = vi.fn();
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync });
+    await flush();
     FakeSocket.last().open();
     expect(onResync).toHaveBeenCalledTimes(1);
 
     FakeSocket.last().close();
     expect(FakeSocket.instances).toHaveLength(1); // waits for backoff
-    vi.advanceTimersByTime(1000);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(FakeSocket.instances).toHaveLength(2);
 
     FakeSocket.last().open();
@@ -114,11 +148,12 @@ describe('subscribeToBookings', () => {
     dispose();
   });
 
-  it('stops reconnecting once disposed', () => {
+  it('stops reconnecting once disposed', async () => {
     const dispose = subscribeToBookings({ onEvent: vi.fn(), onResync: vi.fn() });
+    await flush();
     FakeSocket.last().open();
     dispose();
-    vi.advanceTimersByTime(60_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(FakeSocket.instances).toHaveLength(1);
   });
 });

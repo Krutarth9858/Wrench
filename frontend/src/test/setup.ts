@@ -20,3 +20,14 @@ if (typeof globalThis.localStorage === 'undefined') {
     Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
   }
 }
+
+// jsdom has no ResizeObserver. Components that measure themselves to fit a
+// container need it to exist; a no-op is enough since jsdom reports zero sizes.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class NoopResizeObserver implements ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  Object.defineProperty(globalThis, 'ResizeObserver', { value: NoopResizeObserver, writable: true });
+}

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # Declared as a plain string because pydantic-settings JSON-decodes complex
     # types from .env before validators run; `cors_origins` parses it instead.
     # Accepts a comma-separated list or a JSON array.
-    BACKEND_CORS_ORIGINS: str = "http://localhost:5173"
+    BACKEND_CORS_ORIGINS: str = "http://localhost:5174"
 
     @property
     def cors_origins(self) -> List[str]:

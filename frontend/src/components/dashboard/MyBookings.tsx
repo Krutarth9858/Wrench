@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useBookingRealtime } from '../../hooks/useBookingRealtime';
 import type { ConnectionState } from '../../lib/realtime';
-import { actOnBooking, listBookings, type Booking } from '../../lib/booking';
+import { actOnBooking, listBookings, CANCELLABLE_STATUSES, type Booking } from '../../lib/booking';
 import BookingStatusBadge from './BookingStatusBadge';
 import { VEHICLE_TYPE_LABELS } from '../../lib/mechanic';
 
-const CANCELLABLE = new Set(['PENDING', 'ACCEPTED']);
+
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -47,14 +47,14 @@ export default function MyBookings() {
 
   if (loading) {
     return (
-      <div data-testid="bookings-loading" className="bg-[#18181B] rounded-[40px] p-8 border border-white/5 text-zinc-500 text-sm">
+      <div data-testid="bookings-loading" className="glass-panel p-8 text-zinc-500 text-sm">
         Loading your bookings…
       </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden bg-[#18181B] rounded-[40px] p-8 border border-white/5">
+    <div className="relative overflow-hidden glass-panel p-8">
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-3 block">
@@ -94,13 +94,13 @@ export default function MyBookings() {
       )}
 
       {bookings.length === 0 ? (
-        <div data-testid="bookings-empty" className="p-6 rounded-2xl border border-white/10 bg-white/5 text-zinc-400 text-sm">
+        <div data-testid="bookings-empty" className="glass-card p-6 text-zinc-400 text-sm">
           No bookings yet. Find a mechanic to request roadside assistance.
         </div>
       ) : (
         <ul data-testid="bookings-list" className="space-y-3">
           {bookings.map((b) => (
-            <li key={b.id} data-testid={`booking-${b.id}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <li key={b.id} data-testid={`booking-${b.id}`} className="glass-card p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-white font-medium">{b.mechanic.name}</h3>
@@ -116,7 +116,7 @@ export default function MyBookings() {
                 </div>
                 <BookingStatusBadge status={b.status} />
               </div>
-              {CANCELLABLE.has(b.status) && (
+              {CANCELLABLE_STATUSES.has(b.status) && (
                 <button
                   type="button"
                   onClick={() => void cancel(b.id)}
