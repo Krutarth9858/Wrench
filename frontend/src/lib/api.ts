@@ -77,7 +77,10 @@ export async function apiFetch<T = unknown>(
       body: body !== undefined ? JSON.stringify(body) : rawBody,
     });
   } catch (cause) {
-    throw new ApiError(0, cause, `Cannot reach the backend at ${API_BASE_URL}`);
+    // Status 0 means fetch itself failed — offline, DNS, TLS, or the API is
+    // down. The base URL stays on `detail` for the console; showing it to a
+    // customer exposes internal topology and tells them nothing useful.
+    throw new ApiError(0, { cause, baseUrl: API_BASE_URL }, 'Cannot reach Wrench');
   }
 
   if (response.status === 204) {

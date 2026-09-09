@@ -4,12 +4,13 @@ import { PillButton } from './PillButton';
 import { ArrowUpRight, MapPin, Calendar, Headphones, ChevronDown } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
+import { useAvailability } from '../../lib/availability';
 import { WrenchLogo } from './WrenchLogo';
 import { NotificationBell } from './NotificationBell';
 
 const BRAND = '#00966B';
 
-interface FloatingNavbarProps extends React.HTMLAttributes<HTMLDivElement> { }
+type FloatingNavbarProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarProps>(
   ({ className, ...props }, ref) => {
@@ -23,17 +24,27 @@ export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarPro
     const usePremiumNavbar = isMapPage || isMechanic;
     const isDark = !isMapPage;
 
-    const [isOnline, setIsOnline] = React.useState<boolean | null>(null);
+    /* Shared, so a toggle anywhere in the dashboard is reflected here at once.
+       This navbar is mounted once outside the dashboard's <Routes>, so its own
+       effect cannot re-run on navigation and local state went stale the moment
+       the mechanic changed availability. */
+    const isOnline = useAvailability((state) => state.isAvailable);
+    const publishAvailability = useAvailability((state) => state.setKnownAvailability);
     const [mechanicProfile, setMechanicProfile] = React.useState<{ garage_name: string } | null>(null);
 
     React.useEffect(() => {
-      if (isMechanic) {
-        import('../../lib/mechanic').then(({ getAvailability, getMechanicProfile }) => {
-          getAvailability().then(res => setIsOnline(res.is_available)).catch(() => {});
-          getMechanicProfile().then(res => setMechanicProfile({ garage_name: res.garage_name })).catch(() => {});
-        });
-      }
-    }, [isMechanic]);
+      if (!isMechanic) return;
+      // A new session must not inherit the previous mechanic's pill.
+      publishAvailability(null);
+      import('../../lib/mechanic').then(({ getMechanicProfile }) => {
+        getMechanicProfile().then(res => {
+          setMechanicProfile({ garage_name: res.garage_name });
+          // The profile already carries is_available, so this seeds availability
+          // without a second request for it.
+          publishAvailability(res.is_available);
+        }).catch(() => {});
+      });
+    }, [isMechanic, user?.id, publishAvailability]);
 
     const handleLogout = () => {
       void logout();

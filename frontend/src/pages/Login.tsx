@@ -3,6 +3,8 @@ import { useAuth } from '../lib/auth';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WrenchLogo } from '../components/ui/WrenchLogo';
+import GoogleButton from '../components/auth/GoogleButton';
+import AuthDivider from '../components/auth/AuthDivider';
 
 const WrenchLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -236,7 +238,12 @@ const WrenchLogin: React.FC = () => {
                 </button>
               </form>
 
-              <div className="flex flex-col gap-[12px] items-center" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 520ms both' }}>
+              <div className="flex flex-col gap-[16px]" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 500ms both' }}>
+                <AuthDivider />
+                <GoogleButton disabled={loading} onError={setError} />
+              </div>
+
+              <div className="flex flex-col gap-[12px] items-center" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 560ms both' }}>
                 <p className="m-0 font-light text-[13px] leading-none text-[#F0F4F2]/50">Don’t have an account? <Link to="/register" className="font-medium text-[#F0F4F2] hover:text-[#3ECF8E] transition-colors">Create account</Link></p>
                 <span className="font-light text-[11px] leading-none text-[#F0F4F2]/30">Customer or mechanic account</span>
               </div>

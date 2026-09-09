@@ -3,6 +3,9 @@ import { useAuth } from '../lib/auth';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WrenchLogo } from '../components/ui/WrenchLogo';
+import GoogleButton from '../components/auth/GoogleButton';
+import AuthDivider from '../components/auth/AuthDivider';
+import { requestEmailCode } from '../lib/authExtras';
 
 const WrenchRegister: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +48,19 @@ const WrenchRegister: React.FC = () => {
 
     try {
       await registerUser(formData);
-      navigate('/dashboard', { replace: true });
+      // Registration already signed the user in. Send the verification code and
+      // show the code screen; the dashboard is one step away either way.
+      try {
+        const result = await requestEmailCode(formData.email);
+        navigate('/verify-email', {
+          replace: true,
+          state: { email: formData.email, resendAfter: result.resend_after_seconds },
+        });
+      } catch {
+        // Email could not be sent — do not strand a valid new account here.
+        navigate('/dashboard', { replace: true });
+      }
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create your account.');
     } finally {
@@ -265,7 +280,14 @@ const WrenchRegister: React.FC = () => {
                 </button>
               </form>
 
-              <div className="flex flex-col gap-[12px] items-center" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 520ms both' }}>
+              <div className="flex flex-col gap-[16px]" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 500ms both' }}>
+                <AuthDivider />
+                {/* The role chosen above is carried through Google so signup
+                    lands in the same account type either way. */}
+                <GoogleButton role={formData.role} disabled={loading} onError={setError} />
+              </div>
+
+              <div className="flex flex-col gap-[12px] items-center" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 560ms both' }}>
                 <p className="m-0 font-light text-[13px] leading-none text-[#F0F4F2]/50">Already have an account? <Link to="/login" className="font-medium text-[#F0F4F2] hover:text-[#3ECF8E] transition-colors">Sign in</Link></p>
                 <span className="font-light text-[11px] leading-none text-[#F0F4F2]/30">By creating an account you agree to the Wrench terms.</span>
               </div>

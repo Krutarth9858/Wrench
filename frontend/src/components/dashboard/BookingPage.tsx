@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Target, CheckCircle2, ArrowLeft, Clock, MapPin, Loader2, Star, Wrench as WrenchIcon, X } from 'lucide-react';
-import { ApiError, apiFetchData } from '../../lib/api';
+import { ApiError } from '../../lib/api';
 import {
   actOnBooking,
   createBooking,
+  getBooking,
   CANCELLABLE_STATUSES,
+  TERMINAL_STATUSES,
   isEndedEarly,
   type Booking,
   type BookingStatus,
@@ -80,6 +82,13 @@ export default function BookingPage() {
   const { mechanicId = '' } = useParams();
   const navigate = useNavigate();
   const routerDraft = (useLocation().state as { draft?: BookingDraft } | null)?.draft;
+  const [searchParams] = useSearchParams();
+  /**
+   * `?booking=<id>` is what makes a refresh or a deep link land on the tracker
+   * instead of the creation form. Read once: `confirm` rewrites the URL, and
+   * re-reading it there would restart the initial load.
+   */
+  const [trackedId] = useState(() => searchParams.get('booking') ?? '');
 
   const [mechanic, setMechanic] = useState<MechanicSummary | null>(null);
   const [draft] = useState<BookingDraft | null>(() => routerDraft ?? loadDraft(mechanicId));
@@ -93,26 +102,41 @@ export default function BookingPage() {
   const [cancelling, setCancelling] = useState(false);
   const [, setConnectionStatus] = useState<string>('connecting');
 
-  // Load mechanic details
+  /**
+   * Mechanic and, on a refresh or deep link, the booking itself — resolved
+   * together so the first paint is already the right screen. Rendering the
+   * creation form first and correcting it afterwards would flash "book your
+   * service" at a customer whose request was already declined.
+   */
   useEffect(() => {
     let active = true;
-    getMechanic(mechanicId)
-      .then((m) => active && setMechanic(m))
+    Promise.all([
+      getMechanic(mechanicId),
+      // A stale or foreign id is not an error: fall back to the creation form.
+      trackedId ? getBooking(trackedId).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([m, existing]) => {
+        if (!active) return;
+        setMechanic(m);
+        if (existing) setBooking(existing);
+      })
       .catch((err: Error) => active && setError(err.message))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [mechanicId]);
+  }, [mechanicId, trackedId]);
 
-  // Load existing booking if we got redirected here somehow with an active booking (REST sync)
+  // REST stays authoritative; the socket only says "something changed".
+  const trackedBookingId = booking?.id ?? trackedId;
+  const isTerminal = !!booking && TERMINAL_STATUSES.has(booking.status);
   const refreshBooking = useCallback(async () => {
-    if (!booking) return;
+    // A terminal booking can never change again, so stop tracking it.
+    if (!trackedBookingId || isTerminal) return;
     try {
-      const data = await apiFetchData<Booking>(`/bookings/${booking.id}`);
-      setBooking(data);
+      setBooking(await getBooking(trackedBookingId));
     } catch (e) {
       console.error('Failed to refresh booking', e);
     }
-  }, [booking]);
+  }, [trackedBookingId, isTerminal]);
 
   // WebSocket realtime updates
   useBookingRealtime('customer', () => {
@@ -137,6 +161,8 @@ export default function BookingPage() {
       });
       clearDraft();
       setBooking(created);
+      // Survives a refresh: the tracker can now be re-resolved from the URL.
+      navigate(`/booking/${mechanicId}?booking=${created.id}`, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create this booking.');
     } finally {
@@ -177,6 +203,14 @@ export default function BookingPage() {
       </div>
     );
   }
+
+  /** After a refresh the draft is gone, but the booking still knows where the
+      vehicle is — real API data, never a placeholder. */
+  const mapOrigin = booking
+    ? { latitude: booking.service_latitude, longitude: booking.service_longitude }
+    : draft
+      ? { latitude: draft.latitude, longitude: draft.longitude }
+      : null;
 
   // Pre-fill a nearby mechanic struct for the map
   const mapMechanic = {
@@ -391,7 +425,7 @@ export default function BookingPage() {
 
       {/* ── Right Column: Map & Mechanic Card ── */}
       <div className="absolute inset-0 z-0">
-        <MechanicMap origin={draft ? { latitude: draft.latitude, longitude: draft.longitude } : null} mechanics={[mapMechanic]} selectedId={mechanic.id} onSelect={() => {}} />
+        <MechanicMap origin={mapOrigin} mechanics={[mapMechanic]} selectedId={mechanic.id} onSelect={() => {}} />
       </div>
 
       {/* Floating Mechanic Card */}

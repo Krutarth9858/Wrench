@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Booking } from '../../lib/booking';
+import { BASEMAP_URL, BASEMAP_OPTIONS } from '../../lib/basemap';
 
 interface Props {
   mechanicLocation: { latitude: number; longitude: number } | null;
@@ -69,11 +70,7 @@ export default function DispatchMap({ mechanicLocation, bookings, selectedId, on
       attributionControl: false,
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    }).addTo(map);
+    L.tileLayer(BASEMAP_URL, { ...BASEMAP_OPTIONS }).addTo(map);
     mapRef.current = map;
 
     const invalidate = () => map.invalidateSize();

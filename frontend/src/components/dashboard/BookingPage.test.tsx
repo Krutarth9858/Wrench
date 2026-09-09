@@ -14,7 +14,7 @@ vi.mock('../../lib/discovery', async () => {
 });
 vi.mock('../../lib/booking', async () => {
   const actual = await vi.importActual<typeof import('../../lib/booking')>('../../lib/booking');
-  return { ...actual, createBooking: vi.fn(), actOnBooking: vi.fn() };
+  return { ...actual, createBooking: vi.fn(), actOnBooking: vi.fn(), getBooking: vi.fn() };
 });
 
 const navigate = vi.fn();
@@ -52,11 +52,14 @@ const booking = (over = {}): bookingApi.Booking => ({
   mechanic: { name: 'Speedy Auto', phone_number: null }, ...over,
 });
 
-/** Render at the real route. `withState: false` simulates a hard refresh. */
-function renderPage(withState = true) {
+/**
+ * Render at the real route. `withState: false` simulates a hard refresh;
+ * `search` carries the `?booking=<id>` a refresh or deep link arrives with.
+ */
+function renderPage(withState = true, search = '') {
   return render(
     <MemoryRouter
-      initialEntries={[{ pathname: '/booking/m-1', state: withState ? { draft: DRAFT } : null }]}
+      initialEntries={[{ pathname: '/booking/m-1', search, state: withState ? { draft: DRAFT } : null }]}
     >
       <Routes>
         <Route path="/booking/:mechanicId" element={<BookingPage />} />
@@ -245,6 +248,59 @@ describe('BookingPage', () => {
     expect(screen.getByTestId('booking-heading')).toHaveTextContent('Booking cancelled');
     expect(screen.getByTestId('booking-ended-step')).toHaveTextContent('Cancelled');
     expect(screen.queryByText('In Progress')).not.toBeInTheDocument();
+  });
+
+  // ── Refresh and deep-linking ─────────────────────────────────────────────
+  //
+  // Regression: the tracker only existed in React state, so a refresh dropped
+  // back to the creation form ("Book your service", location missing) even when
+  // the booking had already been rejected — the customer's own reload hid the
+  // terminal state the fix above was meant to show.
+
+  it.each([
+    ['REJECTED', 'Booking declined'],
+    ['CANCELLED', 'Booking cancelled'],
+    ['PENDING', 'Request sent'],
+    ['ACCEPTED', 'Mechanic accepted'],
+  ] as [bookingApi.BookingStatus, string][])(
+    'renders a %s booking from the API on refresh, not the creation form',
+    async (status, heading) => {
+      vi.mocked(bookingApi.getBooking).mockResolvedValue(booking({ status }));
+      renderPage(false, '?booking=b-1'); // hard reload: no router state, no draft
+
+      expect(await screen.findByTestId('booking-heading')).toHaveTextContent(heading);
+      expect(bookingApi.getBooking).toHaveBeenCalledWith('b-1');
+      expect(screen.queryByTestId('confirm-service')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('location-missing')).not.toBeInTheDocument();
+    },
+  );
+
+  it('never flashes the creation form before the terminal state resolves', async () => {
+    vi.mocked(bookingApi.getBooking).mockResolvedValue(booking({ status: 'REJECTED' }));
+    renderPage(false, '?booking=b-1');
+
+    // Until both mechanic and booking resolve, the page shows its loader.
+    expect(screen.getByTestId('booking-page-loading')).toBeInTheDocument();
+    expect(await screen.findByTestId('booking-ended-step')).toHaveTextContent('Declined');
+  });
+
+  it('records the booking id in the URL so a refresh can find it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('confirm-service')).toBeEnabled());
+
+    await user.click(screen.getByTestId('confirm-service'));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith(
+      '/booking/m-1?booking=b-1', { replace: true }));
+  });
+
+  it('falls back to the creation form when the tracked booking is gone', async () => {
+    vi.mocked(bookingApi.getBooking).mockRejectedValue(new ApiError(404, null, 'Not found'));
+    renderPage(true, '?booking=stale');
+
+    await waitFor(() => expect(screen.getByTestId('confirm-service')).toBeInTheDocument());
+    expect(screen.queryByTestId('booking-heading')).not.toBeInTheDocument();
   });
 
   it('still walks the happy path through its four steps', async () => {

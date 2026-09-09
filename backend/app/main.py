@@ -3,9 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.preflight import assert_production_ready
 from app.core.logging import setup_logging
 
 setup_logging()
+
+# Fails fast when ENVIRONMENT=production on development configuration.
+assert_production_ready()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

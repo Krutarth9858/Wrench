@@ -3,7 +3,6 @@ import { ApiError } from '../../lib/api';
 import { getCurrentPosition } from '../../lib/discovery';
 import AvailabilityControl from './AvailabilityControl';
 import {
-  getAvailability,
   getMechanicProfile,
   saveMechanicProfile,
   VEHICLE_TYPES,
@@ -56,18 +55,16 @@ export default function MechanicProfilePanel() {
     setLoading(true);
     setError('');
     try {
-      // Availability comes from its own endpoint so the switch has a single source
-      // of truth, rather than being inferred from whatever the profile last returned.
-      const [profile, availability] = await Promise.all([
-        getMechanicProfile(),
-        getAvailability(),
-      ]);
+      // `is_available` on the profile is the same column `GET /availability`
+      // returns, read in the same request — so the switch is still fed by the
+      // server, just without a second call for a field we already have.
+      const profile = await getMechanicProfile();
       const { id, user_id, is_available, is_verified, average_rating, total_reviews,
         completed_jobs, ...editable } = profile;
-      void id; void user_id; void is_available; void is_verified; void average_rating;
+      void id; void user_id; void is_verified; void average_rating;
       void total_reviews; void completed_jobs;
       setForm(editable as FormState);
-      setAvailable(availability.is_available);
+      setAvailable(is_available);
       setHasProfile(true);
     } catch (err) {
       // 404 simply means this mechanic has not set up a profile yet.

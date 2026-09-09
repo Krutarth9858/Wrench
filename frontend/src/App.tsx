@@ -5,6 +5,8 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import GoogleCallback from './pages/GoogleCallback';
+import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import BookingPage from './components/dashboard/BookingPage';
 import BackendStatus from './components/dev/BackendStatus';
@@ -77,6 +79,12 @@ const App: React.FC = () => {
             </RequireAuth>
           }
         />
+        {/* Where Google returns the browser. Public: the code is useless
+            without the server's client secret and signed state. */}
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        {/* Not PublicOnly: registration already signed this account in, and the
+            guard would bounce straight past the code entry. */}
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route
           path="/dashboard/*"
           element={

@@ -22,6 +22,18 @@ os.environ["DATABASE_URL"] = os.environ.get(
 )
 os.environ.setdefault("SECRET_KEY", "test-only-secret-not-used-outside-pytest")
 
+# Pin the external providers to their offline implementations, overriding
+# whatever .env says. Without this the suite's result depends on the developer's
+# local credentials: configuring real Razorpay keys made the payment tests fail
+# because they sign with the stub's secret. Tests must never reach a live
+# provider, and must pass identically on a machine that has no credentials.
+os.environ["PAYMENT_PROVIDER"] = "stub"
+os.environ["EMAIL_PROVIDER"] = "console"
+os.environ["LLM_PROVIDER"] = "stub"
+# Google Sign-In is exercised with an injected identity; no client is configured.
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
+
 import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402

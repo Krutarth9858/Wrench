@@ -97,10 +97,18 @@ describe('MechanicProfilePanel', () => {
   });
 
   it('reflects the backend availability value', async () => {
-    vi.mocked(mechanic.getAvailability).mockResolvedValue({ is_available: false });
+    // Read from the profile, which carries the same column — see below.
+    vi.mocked(mechanic.getMechanicProfile).mockResolvedValue({ ...PROFILE, is_available: false });
     render(<MechanicProfilePanel />);
     await waitFor(() => expect(screen.getByTestId('availability-label')).toHaveTextContent('Unavailable'));
     expect(screen.getByTestId('availability-toggle')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('does not ask for availability separately from the profile that carries it', async () => {
+    render(<MechanicProfilePanel />);
+    await waitFor(() => expect(screen.getByTestId('availability-label')).toBeInTheDocument());
+    expect(mechanic.getMechanicProfile).toHaveBeenCalledTimes(1);
+    expect(mechanic.getAvailability).not.toHaveBeenCalled();
   });
 
   it('toggles availability through the API and trusts the response', async () => {

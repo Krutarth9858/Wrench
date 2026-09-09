@@ -7,9 +7,11 @@ export type UserRole = 'CUSTOMER' | 'MECHANIC' | 'ADMIN';
 export interface User {
   id: string;
   email: string;
-  phone_number: string;
+  /** Absent on accounts created through Google, which supplies no phone number. */
+  phone_number: string | null;
   role: UserRole;
   is_active: boolean;
+  is_email_verified?: boolean;
 }
 
 interface TokenPair {
@@ -35,6 +37,10 @@ interface AuthState {
 
   register: (input: RegisterInput) => Promise<User>;
   login: (email: string, password: string) => Promise<User>;
+  /** Completes Google Sign-In from the callback and issues the normal session. */
+  signInWithGoogle: (code: string, state: string) => Promise<User>;
+  /** Redeems an email code; the server returns the same tokens `login` does. */
+  verifyEmailCode: (email: string, code: string) => Promise<User>;
   logout: () => Promise<void>;
   loadSession: () => Promise<void>;
 }
@@ -72,6 +78,33 @@ export const useAuth = create<AuthState>()(
         const tokens = await apiFetchData<TokenPair>('/auth/login', {
           method: 'POST',
           body: { email, password },
+        });
+        applyTokens(set, tokens);
+        const user = await apiFetchData<User>('/auth/me');
+        set({ user, status: 'ready' });
+        return user;
+      },
+
+      /**
+       * Google Sign-In and email verification both end in the *existing*
+       * session: the same token pair, the same store, the same protected
+       * routes. There is deliberately no second auth mechanism.
+       */
+      signInWithGoogle: async (code, state) => {
+        const tokens = await apiFetchData<TokenPair>('/auth/google/callback', {
+          method: 'POST',
+          body: { code, state },
+        });
+        applyTokens(set, tokens);
+        const user = await apiFetchData<User>('/auth/me');
+        set({ user, status: 'ready' });
+        return user;
+      },
+
+      verifyEmailCode: async (email, code) => {
+        const tokens = await apiFetchData<TokenPair>('/auth/otp/verify', {
+          method: 'POST',
+          body: { email, code, purpose: 'EMAIL_VERIFICATION' },
         });
         applyTokens(set, tokens);
         const user = await apiFetchData<User>('/auth/me');

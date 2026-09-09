@@ -11,8 +11,11 @@ import MechanicBookings from '../components/dashboard/MechanicBookings';
 import MechanicDispatch from '../components/dashboard/MechanicDispatch';
 import MechanicSchedule from '../components/dashboard/MechanicSchedule';
 import MechanicEarnings from '../components/dashboard/MechanicEarnings';
+import ScheduleService from '../components/dashboard/ScheduleService';
+import MyAppointments from '../components/dashboard/MyAppointments';
+import MechanicAppointments from '../components/dashboard/MechanicAppointments';
 import NotFoundPanel from '../components/dashboard/NotFoundPanel';
-import { User, MapPin, Toolbox, SignOut, SquaresFour, Tray, Clock, ToggleRight, Sparkle } from '@phosphor-icons/react';
+import { User, MapPin, Toolbox, SignOut, SquaresFour, Tray, Clock, ToggleRight, Sparkle, CalendarCheck } from '@phosphor-icons/react';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -32,6 +35,7 @@ const Dashboard: React.FC = () => {
         { name: 'Requests', path: '/dashboard/requests', icon: <Tray className="w-5 h-5" /> },
         { name: 'Active Services', path: '/dashboard/active', icon: <Toolbox className="w-5 h-5" /> },
         { name: 'History', path: '/dashboard/history', icon: <Clock className="w-5 h-5" /> },
+        { name: 'Appointments', path: '/dashboard/appointments', icon: <CalendarCheck className="w-5 h-5" /> },
         { name: 'Availability', path: '/dashboard/availability', icon: <ToggleRight className="w-5 h-5" /> },
         { name: 'Profile', path: '/dashboard/profile', icon: <User className="w-5 h-5" /> },
       ]
@@ -39,7 +43,9 @@ const Dashboard: React.FC = () => {
         { name: 'My Profile', path: '/dashboard', icon: <User className="w-5 h-5" /> },
         { name: 'Troubleshoot', path: '/dashboard/troubleshoot', icon: <Sparkle className="w-5 h-5" /> },
         { name: 'Book a Mechanic', path: '/dashboard/find', icon: <MapPin className="w-5 h-5" /> },
+        { name: 'Schedule Service', path: '/dashboard/schedule-service', icon: <CalendarCheck className="w-5 h-5" /> },
         { name: 'My Bookings', path: '/dashboard/bookings', icon: <Toolbox className="w-5 h-5" /> },
+        { name: 'Appointments', path: '/dashboard/appointments', icon: <Clock className="w-5 h-5" /> },
       ];
 
 
@@ -142,11 +148,16 @@ const Dashboard: React.FC = () => {
                   <Route path="/bookings" element={<MechanicBookings />} />
                   <Route path="/schedule" element={<MechanicSchedule />} />
                   <Route path="/earnings" element={<MechanicEarnings />} />
+                  {/* Scheduled Service — separate from the emergency request views. */}
+                  <Route path="/appointments" element={<MechanicAppointments />} />
                 </>
               ) : (
                 <>
                   <Route path="/troubleshoot" element={<Troubleshoot />} />
                   <Route path="/bookings" element={<MyBookings />} />
+                  {/* Scheduled Service — a second journey beside emergency assistance. */}
+                  <Route path="/schedule-service" element={<ScheduleService />} />
+                  <Route path="/appointments" element={<MyAppointments />} />
                 </>
               )}
               <Route path="*" element={<NotFoundPanel />} />

@@ -134,7 +134,6 @@ const SpecularButton: React.FC<SpecularButtonProps> = ({
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     const geometry = new Triangle(gl);
-    // @ts-ignore
     if (geometry.attributes.uv) delete geometry.attributes.uv;
 
     const program = new Program(gl, {
@@ -246,7 +245,6 @@ const SpecularButton: React.FC<SpecularButtonProps> = ({
       ro.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
       if (gl.canvas.parentNode === fx) fx.removeChild(gl.canvas);
-      // @ts-ignore
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, []);

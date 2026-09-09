@@ -30,3 +30,14 @@ class UserRepository:
         await self.session.commit()
         await self.session.refresh(user)
         return user
+
+    async def get_by_google_sub(self, google_sub: str):
+        result = await self.session.execute(
+            select(User).where(User.google_sub == google_sub)
+        )
+        return result.scalars().first()
+
+    async def save(self, user: User) -> User:
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user

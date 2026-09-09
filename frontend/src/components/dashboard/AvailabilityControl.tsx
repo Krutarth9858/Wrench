@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { setAvailability as setAvailabilityApi } from '../../lib/mechanic';
+import { useAvailability } from '../../lib/availability';
 
 interface Props {
   available: boolean;
@@ -17,12 +18,16 @@ interface Props {
  */
 export default function AvailabilityControl({ available, enabled, onChange, onError }: Props) {
   const [busy, setBusy] = useState(false);
+  const publish = useAvailability((state) => state.setKnownAvailability);
 
   const toggle = async () => {
     setBusy(true);
     try {
       const result = await setAvailabilityApi(!available);
       onChange(result.is_available);
+      // Every other view of availability — the navbar above all — reads this.
+      // Published after the await, so a rejected call leaves it untouched.
+      publish(result.is_available);
     } catch (err) {
       onError?.(err instanceof Error ? err.message : 'Could not update availability.');
     } finally {

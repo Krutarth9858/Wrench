@@ -13,9 +13,27 @@ export const BOOKING_EVENTS = [
 ] as const;
 export type BookingEventType = (typeof BOOKING_EVENTS)[number];
 
+/**
+ * Scheduled Service rides the same socket — there is one realtime architecture.
+ * The event names are distinct so a consumer of one flow never reacts to the
+ * other's traffic, and each event carries its own id field.
+ */
+export const APPOINTMENT_EVENTS = [
+  'APPOINTMENT_REQUESTED', 'APPOINTMENT_QUOTED', 'APPOINTMENT_PAYMENT_PENDING',
+  'APPOINTMENT_PAYMENT_CONFIRMED', 'APPOINTMENT_CONFIRMED', 'APPOINTMENT_STARTED',
+  'APPOINTMENT_COMPLETED', 'APPOINTMENT_DECLINED', 'APPOINTMENT_CANCELLED',
+] as const;
+export type AppointmentEventType = (typeof APPOINTMENT_EVENTS)[number];
+
 export interface BookingEvent {
   type: BookingEventType;
   booking_id: string;
+  status: string;
+}
+
+export interface AppointmentEvent {
+  type: AppointmentEventType;
+  appointment_id: string;
   status: string;
 }
 
@@ -23,6 +41,8 @@ export type ConnectionState = 'connecting' | 'open' | 'closed';
 
 interface Handlers {
   onEvent: (event: BookingEvent) => void;
+  /** Optional: only the Scheduled Service views subscribe to these. */
+  onAppointmentEvent?: (event: AppointmentEvent) => void;
   /** Fired on every successful (re)connection so the caller can resync via REST. */
   onResync: () => void;
   onStateChange?: (state: ConnectionState) => void;
@@ -35,6 +55,16 @@ const isBookingEvent = (value: unknown): value is BookingEvent => {
     typeof candidate.booking_id === 'string' &&
     typeof candidate.status === 'string' &&
     BOOKING_EVENTS.includes(candidate.type as BookingEventType)
+  );
+};
+
+const isAppointmentEvent = (value: unknown): value is AppointmentEvent => {
+  const candidate = value as Partial<AppointmentEvent> | null;
+  return (
+    !!candidate &&
+    typeof candidate.appointment_id === 'string' &&
+    typeof candidate.status === 'string' &&
+    APPOINTMENT_EVENTS.includes(candidate.type as AppointmentEventType)
   );
 };
 
@@ -54,7 +84,9 @@ async function socketUrl(): Promise<string> {
  * Open the booking channel, reconnecting with backoff until `close()` is called.
  * Returns a disposer.
  */
-export function subscribeToBookings({ onEvent, onResync, onStateChange }: Handlers): () => void {
+export function subscribeToBookings(
+  { onEvent, onAppointmentEvent, onResync, onStateChange }: Handlers,
+): () => void {
   let socket: WebSocket | null = null;
   let retry = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -94,6 +126,7 @@ export function subscribeToBookings({ onEvent, onResync, onStateChange }: Handle
         return; // malformed frame: ignore rather than crash the UI
       }
       if (isBookingEvent(parsed)) onEvent(parsed);
+      else if (isAppointmentEvent(parsed)) onAppointmentEvent?.(parsed);
     };
 
     ws.onclose = () => {

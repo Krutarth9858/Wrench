@@ -1840,7 +1840,8 @@ Before working on a task:
 9. Do not guess when the repository can answer the question.
 
 Additional standing cautions for this repo:
-- Do not assume booking, AI, payments, maps, notifications, or realtime exist. They do not.
+- Booking, scheduled service, payments, maps, AI diagnostics and realtime all EXIST now.
+  See §19-§21. The "nothing is implemented" warnings elsewhere in this file predate them.
 - Do not trust the frontend as evidence of backend behavior — it is entirely mocked and its
   data models disagree with the backend's.
 - Product requirements come from *"Wrench – Requirement Analysis Document"* v1.0,
@@ -1919,7 +1920,8 @@ Before working on a task:
 9. Do not guess when the repository can answer the question.
 
 Additional standing cautions for this repo:
-- Do not assume booking, AI, payments, maps, notifications, or realtime exist. They do not.
+- Booking, scheduled service, payments, maps, AI diagnostics and realtime all EXIST now.
+  See §19-§21. The "nothing is implemented" warnings elsewhere in this file predate them.
 - Do not trust the frontend as evidence of backend behavior — it is entirely mocked and its
   data models disagree with the backend's.
 - Product requirements come from *"Wrench – Requirement Analysis Document"* v1.0,
@@ -1933,3 +1935,225 @@ Additional standing cautions for this repo:
   nearby-mechanic search, and live tracking, **none of which exist in code**.
 - All API paths ARE served under `/api/v1` as of Phase 0. Health: `GET /api/v1/health`.
 - Frontend HTTP goes through `frontend/src/lib/api.ts` only. Never add a bare `fetch` to a component.
+
+---
+
+## 20. Scheduled Service (Pre-Booked Vehicle Service)
+
+A **second, separate booking mode** added alongside emergency roadside assistance.
+The two flows share infrastructure (users, mechanic profiles, the WebSocket
+channel, the API client) but never share state, tables or status values.
+
+| | Emergency assistance | Scheduled Service |
+|---|---|---|
+| Table | `bookings` | `appointments` (+ `service_packages`, `appointment_payments`) |
+| Status enum | `BookingStatus` | `AppointmentStatus` |
+| State authority | `services/booking_state.py` | `services/appointment_state.py` |
+| Events | `BOOKING_*` | `APPOINTMENT_*` |
+| Routes | `/api/v1/bookings` | `/api/v1/appointments` |
+
+### Data model (migration 0008)
+- **`service_packages`** — the price authority. One row per
+  (service_type, vehicle_type), unique-constrained. Seeded from
+  `services/service_catalog.py`, which is the single place service copy and
+  prices are declared. `price_minor` is NULL for CUSTOM.
+- **`appointments`** — real `scheduled_date` / `start_time` / `end_time` columns
+  rather than a reading of `created_at`. A **partial unique index**
+  (`uq_appointment_active_slot` on mechanic + date + start time, WHERE status is
+  non-terminal) is what makes double-booking impossible; the service layer turns
+  the IntegrityError into a 409. Declared both in the migration and on the model
+  so the test schema carries the same guarantee.
+- **`appointment_payments`** — one row per payment attempt.
+  `provider_payment_id` is uniquely indexed: that is the idempotency guarantee
+  for retried confirmations and redelivered webhooks.
+
+### State machine (`services/appointment_state.py`)
+```
+fixed price: PAYMENT_PENDING -> PAYMENT_CONFIRMED -> CONFIRMED -> IN_SERVICE -> COMPLETED
+custom:      REQUESTED -> QUOTED -> PAYMENT_PENDING -> (as above)
+terminal:    COMPLETED | DECLINED (mechanic) | CANCELLED (customer)
+```
+`BLOCKING_STATUSES` decides which appointments still hold a calendar slot, so a
+cancelled or declined slot is genuinely free again.
+
+### Money
+- Stored as integer **minor units** (paise). No float ever represents a price.
+- The amount is resolved server-side from (service_type, vehicle_type). A price
+  in a request body is ignored — see `test_price_cannot_be_supplied_by_the_client`.
+
+### Payments (`services/payment_gateway.py`)
+There was **no payment integration in Wrench before this**. The boundary mirrors
+`services/llm.py`: `PAYMENT_PROVIDER = stub | razorpay`, default `stub`.
+The stub implements Razorpay's real HMAC-SHA256 signature scheme, so the
+verification path under test is the production one; adding
+`RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` changes configuration, not logic.
+`POST /appointments/{id}/payment-simulate` exists only while the stub is active
+(404s otherwise) so the flow is testable without a payment account.
+
+### Slots (`services/slots.py`)
+Derived, never stored: the mechanic's existing `working_start_time` /
+`working_end_time` divided on a 30-minute grid into service-length slots, minus
+anything overlapping a blocking appointment, minus the past.
+
+### Frontend
+`lib/appointments.ts`, `lib/checkout.ts`, `hooks/useAppointmentRealtime.ts`,
+and `components/dashboard/{ScheduleService,ServiceCard,MyAppointments,
+MechanicAppointments,AppointmentStatusBadge}.tsx`. Routes
+`/dashboard/schedule-service` and `/dashboard/appointments` (both roles).
+Appointment events ride the **existing** booking socket — `lib/realtime.ts`
+validates both event families and dispatches them separately.
+
+
+---
+
+## 21. Auth, Payments, Maps — current architecture
+
+Supersedes any earlier statement in this file that these do not exist.
+
+### Authentication
+Three ways in, **one session**. Google Sign-In and OTP both end in the same
+JWT access + rotating refresh pair `/auth/login` issues; there is no second
+session mechanism, no separate Google session and no second auth store.
+
+| Path | Endpoint | Notes |
+|---|---|---|
+| Password | `POST /auth/login` | Argon2, unchanged |
+| Google | `GET /auth/google/url` -> `POST /auth/google/callback` | authorization-code flow |
+| Email OTP | `POST /auth/otp/request` -> `POST /auth/otp/verify` | 6-digit, Argon2-hashed |
+
+**Google (`services/google_oauth.py`)** — the browser only ever carries an
+opaque `code`. The backend exchanges it server-side with the client secret and
+then **verifies the id_token's RS256 signature against Google's JWKS**
+(`https://www.googleapis.com/oauth2/v3/certs`, cached by `PyJWKClient`), plus
+`aud`, `exp` and `iss`. `iss` is checked explicitly rather than through
+`jwt.decode(issuer=...)`, which compares by equality and cannot express
+Google's two valid issuer strings. CSRF `state` is a short-lived token signed
+with `SECRET_KEY` that also carries the signup role. `GOOGLE_REDIRECT_URI`
+comes from config, never from the request.
+
+Linking rules: known `google_sub` -> that account; same email **and Google says
+verified** -> link, keeping the existing role; same email **unverified** -> 409
+(otherwise anyone able to create a Google account on someone's address could
+take over their Wrench account); otherwise create in the requested role.
+
+`users.phone_number` and `users.hashed_password` are **nullable** (migration
+0010) because Google supplies neither.
+
+**OTP (`services/otp.py`)** — `secrets`-random, Argon2-hashed, single-use,
+10-minute expiry, one live code per user+purpose (a new one supersedes the
+old), 5 attempts per code, 60s resend cooldown, per-email and per-caller
+hourly limits. The plaintext code exists only in the email. `OTPPurpose`
+already includes `PASSWORD_RESET`; that flow is not built.
+
+**Email (`services/email.py`)** — `EMAIL_PROVIDER=console|resend`. Console is
+the offline default: same `Mailer` protocol, in-memory outbox for tests, logs
+a redacted recipient and never a body.
+
+### Payments
+`services/payment_gateway.py`, `PAYMENT_PROVIDER=stub|razorpay`. The stub
+implements the *same* HMAC-SHA256 schemes Razorpay uses, so the verification
+code under test is the production path.
+
+- Amounts resolve server-side from (service_type, vehicle_type) or an approved
+  quotation. A price in a request body is ignored.
+- Money is integer **minor units** (paise). No float is ever a price.
+- `POST /api/v1/webhooks/razorpay` verifies HMAC-SHA256 over the **raw request
+  body** using `RAZORPAY_WEBHOOK_SECRET` — a different credential from the API
+  secret. Missing secret = reject, never accept.
+- Idempotency: unique `provider_payment_id`, unique `provider_refund_id`, and a
+  `webhook_events` table keyed on the gateway's event id.
+- Refunds: `REFUND_PENDING -> REFUND_INITIATED -> REFUNDED`, with
+  `REFUND_FAILED`. **Nothing is REFUNDED until a signed webhook says so.**
+- Payment state is a separate machine (`services/payment_state.py`) from
+  appointment state.
+
+### Maps
+Leaflet + CARTO raster basemaps, configured once in `frontend/src/lib/basemap.ts`
+and used by both `MechanicMap` and `DispatchMap`. CARTO watermarks tiles
+"API KEY REQUIRED" unless authenticated; the key travels as **`?key=`** in the
+tile URL (the only query form CARTO accepts — `api_key`, `apikey`,
+`access_token` and others are ignored). It is public by necessity: Leaflet
+loads tiles through `<img>`, which cannot send an Authorization header.
+Protect it with a domain restriction in CARTO, not by hiding it.
+
+### Timezone
+`APP_TIMEZONE` (default `Asia/Kolkata`). `core/clock.py` keeps two clocks
+apart: `local_now()` for appointment wall-clock comparisons, `system_now()`
+(UTC) for recorded instants. Conflating them is what once offered slots that
+had already passed.
+
+### Errors
+`frontend/src/lib/errors.ts` maps a status to customer-facing copy; a 5xx body
+is never echoed back. `components/ui/StateMessage.tsx` provides shared
+`EmptyState`/`ErrorState`. Panels with genuinely specific copy keep their own.
+
+### Environment variables (names only)
+`DATABASE_URL`, `SECRET_KEY`, `BACKEND_CORS_ORIGINS`, `APP_TIMEZONE`,
+`LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`,
+`PAYMENT_PROVIDER`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`,
+`RAZORPAY_WEBHOOK_SECRET`, `PAYMENT_CURRENCY`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`,
+`EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM`,
+`OTP_LENGTH`, `OTP_EXPIRY_MINUTES`, `OTP_RESEND_COOLDOWN_SECONDS`,
+`OTP_MAX_ATTEMPTS`, `OTP_MAX_REQUESTS_PER_HOUR`, `OTP_MAX_VERIFY_PER_HOUR`.
+Frontend: `VITE_API_BASE_URL`, `VITE_CARTO_API_KEY` (both browser-side by design).
+
+### Known production limitations
+1. **Realtime and rate limiting are in-process.** More than one worker and each
+   holds its own sockets and its own limit buckets. Needs a shared backplane.
+2. `APP_TIMEZONE` is global; multi-region needs a timezone per mechanic.
+3. Login is not gated on `is_email_verified` — deliberate, so existing accounts
+   keep working. One-line policy change.
+4. Expired OTP rows are never swept (`delete_expired` exists, nothing calls it).
+5. ESLint config is v8-style while ESLint 10 is installed; `npm run lint` fails.
+   Pre-existing, from commit `37b98f0d`.
+
+
+---
+
+## 22. Verified integration status (as of the readiness pass)
+
+Evidence-based, not aspirational. "Verified" means a real request reached the
+real provider, or a real provider response was accepted by this code.
+
+| Integration | Status | Evidence |
+|---|---|---|
+| Razorpay order creation | **VERIFIED** | `order_Ta0eJjmLK0APZ3` fetched back from `api.razorpay.com` |
+| Razorpay payment + signature | **VERIFIED** | payment `pay_Ta0f2h…` reported `captured` by Razorpay; appointment reached `PAYMENT_CONFIRMED` / `PAID` with server-side signature verification |
+| Server price authority | **VERIFIED** | catalogue 299900 -> appointment -> payment -> Razorpay `amount_paid` 299900 |
+| Google OAuth config | **VERIFIED** | `/auth/google/url` returns a real Google URL; Google renders "to continue to Wrench" |
+| Google login end-to-end | **NOT VERIFIED** | zero rows in `users` have `google_sub`; no login has ever completed |
+| Razorpay webhook (live) | **NOT VERIFIED** | only `webhook_events` row is a locally-signed test; no public tunnel exists |
+| Razorpay refund (live) | **NOT VERIFIED** | the only `provider_refund_id` is on a stub row |
+| Email OTP delivery | **NOT VERIFIED** | `EMAIL_API_KEY` unset; `EMAIL_PROVIDER` falls back to `console` |
+
+### Production preflight
+`app/core/preflight.py` runs at import time in `app/main.py`. With
+`ENVIRONMENT=production` it refuses to start and lists every problem at once:
+`EMAIL_PROVIDER=console`, stub payments, missing Razorpay/webhook credentials,
+a localhost `GOOGLE_REDIRECT_URI`, a localhost CORS origin or database. It
+never prints a secret value. `ENVIRONMENT` defaults to `development`, so a
+laptop is never blocked.
+
+### Lint
+Migrated to ESLint flat config (`eslint.config.js`); `.eslintrc.cjs` deleted.
+The old v8-style config could not run under the installed ESLint 10, so
+`npm run lint` failed outright. `react-hooks` v7's `recommended` adds React
+Compiler rules (`set-state-in-effect`, `refs`) that flag ~18 pre-existing
+components; the migration keeps the previous behaviour (`rules-of-hooks` error,
+`exhaustive-deps` warn) and leaves adopting the stricter set as a deliberate
+decision. `npm run lint` exits 0 with 5 pre-existing warnings; the `--ext` flag
+and `--max-warnings 0` were dropped (`--ext` is invalid in flat config, and the
+5 warnings are not safely fixable — removing the two `any`s breaks `tsc`).
+
+### Deployment topology
+**INITIAL DEPLOYMENT: SINGLE BACKEND WORKER.**
+`services/realtime.py` holds WebSocket connections in process memory and
+`services/rate_limit.py` holds rate-limit buckets in process memory. With one
+worker both are correct.
+
+**MULTI-WORKER / HORIZONTAL SCALING REQUIRES A SHARED BACKPLANE FOR REALTIME
+AND RATE LIMITING.** With N workers a client connected to worker A never sees
+an event emitted on worker B, and every OTP/login limit is effectively N times
+looser. Redis pub/sub plus a shared limiter store is the fix; it is deliberately
+not implemented, because single-worker is correct for the initial deployment.
