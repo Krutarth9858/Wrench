@@ -1,10 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
+import { ResponsiveLanding, ResponsiveLogin, ResponsiveRegister, ResponsiveDashboard } from './pages/ResponsivePages';
 import GoogleCallback from './pages/GoogleCallback';
 import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
@@ -49,7 +46,7 @@ const App: React.FC = () => {
           path="/"
           element={
             <PublicOnly>
-              <Landing />
+              <ResponsiveLanding />
             </PublicOnly>
           }
         />
@@ -57,7 +54,7 @@ const App: React.FC = () => {
           path="/login"
           element={
             <PublicOnly>
-              <Login />
+              <ResponsiveLogin />
             </PublicOnly>
           }
         />
@@ -65,7 +62,7 @@ const App: React.FC = () => {
           path="/register"
           element={
             <PublicOnly>
-              <Register />
+              <ResponsiveRegister />
             </PublicOnly>
           }
         />
@@ -89,7 +86,7 @@ const App: React.FC = () => {
           path="/dashboard/*"
           element={
             <RequireAuth>
-              <Dashboard />
+              <ResponsiveDashboard />
             </RequireAuth>
           }
         />

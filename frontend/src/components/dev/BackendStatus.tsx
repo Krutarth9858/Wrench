@@ -53,7 +53,7 @@ export const BackendStatus: React.FC = () => {
       data-testid="backend-status"
       data-state={state}
       title={`${API_BASE_URL}${detail ? ` — ${detail}` : ''}`}
-      className={`fixed bottom-4 left-4 z-[200] flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-md ${tone}`}
+      className={`fixed bottom-20 md:bottom-4 left-4 z-[200] flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-md ${tone}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dot} ${state === 'checking' ? 'animate-pulse' : ''}`} />
       {label}
