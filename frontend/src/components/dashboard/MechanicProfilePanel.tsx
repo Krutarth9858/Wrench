@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Check, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { ApiError } from '../../lib/api';
+import { useAvailability } from '../../lib/availability';
 import { getCurrentPosition } from '../../lib/discovery';
 import AvailabilityControl from './AvailabilityControl';
 import {
@@ -48,8 +51,11 @@ export default function MechanicProfilePanel() {
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const publishAvailability = useAvailability((s) => s.setKnownAvailability);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +71,7 @@ export default function MechanicProfilePanel() {
       void total_reviews; void completed_jobs;
       setForm(editable as FormState);
       setAvailable(is_available);
+      publishAvailability(is_available);
       setHasProfile(true);
     } catch (err) {
       // 404 simply means this mechanic has not set up a profile yet.
@@ -76,7 +83,7 @@ export default function MechanicProfilePanel() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [publishAvailability]);
 
   useEffect(() => {
     void load();
@@ -132,11 +139,22 @@ export default function MechanicProfilePanel() {
       }
       const saved = await saveMechanicProfile({ ...form, latitude, longitude });
       setAvailable(saved.is_available);
+      publishAvailability(saved.is_available);
       setHasProfile(true);
       setNotice('Profile saved.');
-      setTimeout(() => setNotice(''), 3000);
+      setJustSaved(true);
+      setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      toast.success('Garage profile saved successfully!', {
+        description: 'Your details, coverage area and location are now updated.',
+      });
+      setTimeout(() => {
+        setNotice('');
+        setJustSaved(false);
+      }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save your profile.');
+      const errMsg = err instanceof Error ? err.message : 'Could not save your profile.';
+      setError(errMsg);
+      toast.error('Could not save profile', { description: errMsg });
     } finally {
       setSaving(false);
     }
@@ -315,14 +333,42 @@ export default function MechanicProfilePanel() {
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          data-testid="save-profile"
-          className="h-12 px-8 rounded-2xl bg-emerald-500 text-zinc-950 font-semibold disabled:opacity-50 transition-opacity"
-        >
-          {saving ? 'Saving…' : 'Save profile'}
-        </button>
+        <div className="flex flex-wrap items-center gap-4 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            data-testid="save-profile"
+            className={`h-12 px-8 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+              justSaved
+                ? 'bg-emerald-400 text-zinc-950 shadow-[0_0_28px_rgba(52,211,153,0.45)] ring-2 ring-emerald-300/60'
+                : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_28px_rgba(16,185,129,0.4)]'
+            } disabled:opacity-60 disabled:cursor-not-allowed`}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving…</span>
+              </>
+            ) : justSaved ? (
+              <>
+                <Check className="w-5 h-5 stroke-[2.5] animate-in zoom-in-75 duration-300" />
+                <span>Saved successfully!</span>
+              </>
+            ) : (
+              <span>Save profile</span>
+            )}
+          </button>
+
+          {justSaved ? (
+            <span className="text-emerald-400 text-sm font-medium flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
+              <Check className="w-4 h-4" /> Changes saved to cloud
+            </span>
+          ) : lastSavedAt ? (
+            <span className="text-zinc-500 text-xs flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" /> Last saved at {lastSavedAt}
+            </span>
+          ) : null}
+        </div>
       </form>
     </div>
   );

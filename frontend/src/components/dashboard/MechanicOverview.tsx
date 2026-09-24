@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError } from '../../lib/api';
 import { listBookings, type Booking } from '../../lib/booking';
 import { getAvailability } from '../../lib/mechanic';
+import { useAvailability } from '../../lib/availability';
 import AvailabilityControl from './AvailabilityControl';
 import BookingStatusBadge from './BookingStatusBadge';
 
@@ -13,6 +14,7 @@ export default function MechanicOverview() {
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const publishAvailability = useAvailability((s) => s.setKnownAvailability);
 
   const load = useCallback(async () => {
     setError('');
@@ -23,13 +25,14 @@ export default function MechanicOverview() {
 
     if (availability.status === 'fulfilled') {
       setAvailable(availability.value.is_available);
+      publishAvailability(availability.value.is_available);
       setHasProfile(true);
     } else if (availability.reason instanceof ApiError && availability.reason.status === 404) {
       // No profile saved yet — availability simply does not exist to toggle.
       setHasProfile(false);
     }
     setLoading(false);
-  }, []);
+  }, [publishAvailability]);
 
   useEffect(() => {
     void load();

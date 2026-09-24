@@ -87,17 +87,23 @@ class SmtpMailer:
     name = "smtp"
 
     def __init__(self, host: str, port: int, user: str, password: str, sender: str, tls: bool = True):
-        self._host = host
-        self._port = port
-        self._user = user
-        self._password = password
-        self._sender = sender
+        self._host = (host or "smtp.gmail.com").strip()
+        self._port = int(port) if port else 587
+        self._user = (user or "").strip()
+        # Clean password: strip whitespace. If it's a 16-character Google App Password with spaces ("xxxx xxxx xxxx xxxx"),
+        # strip spaces so Gmail authentication succeeds cleanly.
+        clean_pwd = (password or "").strip()
+        if "@gmail.com" in self._user.lower() or len(clean_pwd.replace(" ", "")) == 16:
+            clean_pwd = clean_pwd.replace(" ", "")
+        self._password = clean_pwd
+        self._sender = (sender or "").strip() or self._user
         self._tls = tls
 
     async def send(self, to: str, subject: str, html: str, text: str) -> None:
         import asyncio
         from email.message import EmailMessage
         import smtplib
+        import ssl
 
         def _send() -> None:
             msg = EmailMessage()
@@ -107,15 +113,30 @@ class SmtpMailer:
             msg.set_content(text)
             msg.add_alternative(html, subtype="html")
 
-            with smtplib.SMTP(self._host, self._port, timeout=15) as server:
-                if self._tls:
-                    server.starttls()
-                if self._user and self._password:
-                    server.login(self._user, self._password)
-                server.send_message(msg)
+            context = ssl.create_default_context()
+            if self._port == 465:
+                with smtplib.SMTP_SSL(self._host, self._port, timeout=15, context=context) as server:
+                    if self._user and self._password:
+                        server.login(self._user, self._password)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(self._host, self._port, timeout=15) as server:
+                    server.ehlo()
+                    if self._tls:
+                        server.starttls(context=context)
+                        server.ehlo()
+                    if self._user and self._password:
+                        server.login(self._user, self._password)
+                    server.send_message(msg)
 
         try:
             await asyncio.to_thread(_send)
+        except smtplib.SMTPAuthenticationError as exc:
+            logger.error("SMTP authentication failed for user %s: %s", _redact(self._user), exc)
+            raise EmailError(
+                f"SMTP authentication failed: Invalid username or App Password for {self._user}. "
+                "Ensure 2-Step Verification is enabled and generate a fresh App Password at https://myaccount.google.com/apppasswords."
+            ) from exc
         except Exception as exc:
             logger.warning("SMTP failed to deliver message to %s: %s", _redact(to), exc)
             raise EmailError(f"Could not deliver email via SMTP: {exc}") from exc

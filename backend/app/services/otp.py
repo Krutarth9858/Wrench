@@ -90,13 +90,18 @@ class OTPService:
         subject, html, text = verification_email(code, settings.OTP_EXPIRY_MINUTES)
         try:
             await get_mailer().send(user.email, subject, html, text)
-        except EmailError:
+        except EmailError as exc:
             # The row is already written; the customer can resend. The code is
             # never surfaced to the caller as a consolation.
-            logger.warning("verification email could not be delivered")
+            logger.warning("verification email could not be delivered: %s", exc)
+            detail = (
+                str(exc)
+                if (settings.ALLOW_DEV_STUBS_IN_PROD or (settings.ENVIRONMENT or "").lower() != "production")
+                else "We could not send the email just now. Please try again."
+            )
             raise HTTPException(
                 status_code=http_status.HTTP_502_BAD_GATEWAY,
-                detail="We could not send the email just now. Please try again.",
+                detail=detail,
             )
         return otp
 

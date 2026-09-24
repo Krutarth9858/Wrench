@@ -127,7 +127,8 @@ export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarPro
                   <span className="text-sm font-medium group-hover:opacity-70 transition-opacity hidden sm:inline" style={{ color: isDark ? '#FFFFFF' : '#111827' }}>
                     {isMechanic && mechanicProfile ? mechanicProfile.garage_name : user.email.split('@')[0]}
                     {isMechanic && isOnline !== null && (
-                      <span className="block text-[11px] font-normal" style={{ color: isOnline ? (isDark ? '#34d399' : BRAND) : '#9CA3AF', marginTop: '-2px' }}>
+                      <span className="flex items-center gap-1.5 text-[11px] font-medium transition-colors" style={{ color: isOnline ? (isDark ? '#34d399' : BRAND) : '#9CA3AF', marginTop: '-2px' }}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-all ${isOnline ? 'bg-emerald-400 animate-pulse ring-2 ring-emerald-400/30' : 'bg-zinc-500'}`} />
                         {isOnline ? 'Online' : 'Offline'}
                       </span>
                     )}

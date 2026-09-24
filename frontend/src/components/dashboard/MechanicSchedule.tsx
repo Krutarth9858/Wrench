@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError } from '../../lib/api';
 import { listBookings, type Booking } from '../../lib/booking';
 import { getMechanicProfile, VEHICLE_TYPE_LABELS, type MechanicProfile } from '../../lib/mechanic';
+import { useAvailability } from '../../lib/availability';
 import { useBookingRealtime } from '../../hooks/useBookingRealtime';
 import AvailabilityControl from './AvailabilityControl';
 import BookingStatusBadge from './BookingStatusBadge';
@@ -22,6 +23,7 @@ export default function MechanicSchedule() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   /** A missing profile is an empty state; anything else is a real failure. */
   const [noProfile, setNoProfile] = useState(false);
+  const publishAvailability = useAvailability((s) => s.setKnownAvailability);
   /* Tracked separately so a successful booking refresh cannot clear a profile
      failure that is still on screen, and vice versa. Rendered as one banner. */
   const [profileError, setProfileError] = useState('');
@@ -45,6 +47,7 @@ export default function MechanicSchedule() {
       if (profileResult.value) {
         setProfile(profileResult.value);
         setAvailable(profileResult.value.is_available);
+        publishAvailability(profileResult.value.is_available);
         setNoProfile(false);
         setProfileError('');
       }
