@@ -11,7 +11,7 @@ COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps --ignore-scripts
 
 COPY . .
-RUN npm run build
+RUN npx vite build
 
 # Stage 2: Serve production assets via Nginx with reverse proxy
 FROM nginx:1.25-alpine AS runner
