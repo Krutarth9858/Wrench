@@ -7,6 +7,9 @@ WORKDIR /app
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+ARG VITE_CARTO_API_KEY=cb1_33v3_1_7aec5765d302ee1f12be9827
+ENV VITE_CARTO_API_KEY=$VITE_CARTO_API_KEY
+
 COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps --ignore-scripts
 

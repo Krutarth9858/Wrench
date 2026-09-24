@@ -77,6 +77,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_BASE_URL=/api/v1
+        - VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY:-cb1_33v3_1_7aec5765d302ee1f12be9827}
     container_name: wrench_frontend
     restart: unless-stopped
     # Defaults to port 8085 (avoids amitkhatri on 8080 and kelvion on 3000/8000)
