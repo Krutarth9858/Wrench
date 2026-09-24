@@ -171,6 +171,14 @@ class ResendMailer:
         logger.info("email sent to %s: %s", _redact(to), subject)
 
 
+def _extract_email(addr: str) -> str:
+    import re
+    match = re.search(r"<([^>]+)>", addr)
+    if match:
+        return match.group(1).strip()
+    return addr.strip()
+
+
 def get_mailer() -> Mailer:
     provider = (settings.EMAIL_PROVIDER or "console").lower()
     if provider == "resend":
@@ -179,14 +187,17 @@ def get_mailer() -> Mailer:
             raise EmailError("EMAIL_PROVIDER=resend requires EMAIL_API_KEY.")
         return ResendMailer(settings.EMAIL_API_KEY, settings.EMAIL_FROM)
     if provider == "smtp":
-        if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-            raise EmailError("EMAIL_PROVIDER=smtp requires SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.")
+        sender = (settings.SMTP_FROM or settings.EMAIL_FROM or settings.SMTP_USER or "").strip()
+        user = settings.SMTP_USER.strip() or _extract_email(sender)
+        if not settings.SMTP_HOST or not user or not settings.SMTP_PASSWORD:
+            raise EmailError("EMAIL_PROVIDER=smtp requires SMTP_HOST, SMTP_PASSWORD, and SMTP_USER (or SMTP_FROM).")
         return SmtpMailer(
             host=settings.SMTP_HOST,
             port=settings.SMTP_PORT,
-            user=settings.SMTP_USER,
+            user=user,
             password=settings.SMTP_PASSWORD,
-            sender=settings.EMAIL_FROM or settings.SMTP_USER,
+            sender=sender or user,
             tls=settings.SMTP_TLS,
         )
     return ConsoleMailer()
+

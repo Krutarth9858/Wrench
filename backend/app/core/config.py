@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_TLS: bool = True
+    SMTP_FROM: str = ""
 
     # Email OTP policy. Configured here, never hardcoded at a call site.
     OTP_LENGTH: int = 6
