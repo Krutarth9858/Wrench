@@ -1,0 +1,16 @@
+.git
+.gitignore
+.agents
+*.pdf
+*.docx
+*.png
+*.jpg
+report_assets/
+*.pyc
+__pycache__/
+.tmp/
+node_modules/
+dist/
+venv/
+.venv/
+.env

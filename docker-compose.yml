@@ -2,34 +2,103 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: wrench_db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: wrench
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-WrenchSecurePostgres2026!}
+      POSTGRES_DB: ${POSTGRES_DB:-wrench}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wrench_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-wrench}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Dedicated loopback port (no conflict with other projects' databases)
+    ports:
+      - "127.0.0.1:${DB_PORT:-5435}:5432"
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: wrench_backend
-    volumes:
-      - ./backend:/app
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/wrench
-      # Required. Compose fails fast if SECRET_KEY is not set in the environment
-      # or in a local .env file; there is deliberately no default.
-      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set (see backend/.env.example)}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:5174}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-WrenchSecurePostgres2026!}@db:5432/${POSTGRES_DB:-wrench}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - ALLOW_DEV_STUBS_IN_PROD=${ALLOW_DEV_STUBS_IN_PROD:-true}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-*}
+      - APP_TIMEZONE=${APP_TIMEZONE:-Asia/Kolkata}
+      - AUTO_SEED=${AUTO_SEED:-true}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@wrench.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-AdminSecure2026!}
+      - ADMIN_PHONE=${ADMIN_PHONE:-+919876543200}
+      - LLM_PROVIDER=${LLM_PROVIDER:-stub}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-gemini-2.0-flash}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-stub}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-console}
+      - EMAIL_API_KEY=${EMAIL_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-Wrench <onboarding@resend.dev>}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - wrench_network
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Dedicated loopback port for health checks / internal diagnosis
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8005}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=/api/v1
+    container_name: wrench_frontend
+    restart: unless-stopped
+    # Defaults to port 8085 (avoids amitkhatri on 8080 and kelvion on 3000/8000)
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:${PORT:-8085}:80"
+    depends_on:
+      - backend
+    networks:
+      - wrench_network
+    mem_limit: 256m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  wrench_network:
+    name: wrench_network
 
 volumes:
   postgres_data:
+    name: wrench_postgres_data

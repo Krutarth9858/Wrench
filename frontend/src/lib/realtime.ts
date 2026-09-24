@@ -76,7 +76,15 @@ const isAppointmentEvent = (value: unknown): value is AppointmentEvent => {
  */
 async function socketUrl(): Promise<string> {
   const { ticket } = await apiFetchData<{ ticket: string }>('/ws/ticket', { method: 'POST' });
-  const base = API_BASE_URL.replace(/^http/, 'ws');
+  let base: string;
+  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+    base = API_BASE_URL.replace(/^http/, 'ws');
+  } else {
+    const proto = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = typeof window !== 'undefined' ? window.location.host : 'localhost:8000';
+    const cleanPath = API_BASE_URL ? (API_BASE_URL.startsWith('/') ? API_BASE_URL : `/${API_BASE_URL}`) : '/api/v1';
+    base = `${proto}//${host}${cleanPath}`;
+  }
   return `${base}/ws/bookings?ticket=${encodeURIComponent(ticket)}`;
 }
 

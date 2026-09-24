@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     #: "development" | "production". Production configuration is checked at
     #: startup by app/core/preflight.py.
     ENVIRONMENT: str = "development"
+    #: Set to True when deploying demo / college evaluation instances without live paid third-party accounts.
+    ALLOW_DEV_STUBS_IN_PROD: bool = False
 
     # Database
     DATABASE_URL: str

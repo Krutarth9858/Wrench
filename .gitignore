@@ -64,3 +64,18 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Internship documentation & report generators (local only)
+Final Internship*
+report_assets/
+frontend/report_screenshots/
+frontend/capture_all_screens.cjs
+build_all_reports.py
+build_report.py
+prepare_report_images.py
+seed_demo_data.py
+*.pdf
+*.docx
+Logo-Square.jpg
+indus_logo_clean.png
+page1_logo.png

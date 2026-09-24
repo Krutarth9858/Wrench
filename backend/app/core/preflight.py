@@ -75,6 +75,12 @@ def assert_production_ready() -> None:
         return
     problems = production_problems()
     if problems:
+        if getattr(settings, "ALLOW_DEV_STUBS_IN_PROD", False):
+            logger.warning(
+                "Running in production with ALLOW_DEV_STUBS_IN_PROD enabled. Active stubs:\n  - "
+                + "\n  - ".join(problems)
+            )
+            return
         raise RuntimeError(
             "Refusing to start: ENVIRONMENT=production but the configuration is "
             "not production-ready.\n  - " + "\n  - ".join(problems)
