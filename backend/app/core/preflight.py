@@ -32,8 +32,11 @@ def production_problems() -> List[str]:
     if (settings.EMAIL_PROVIDER or "console").lower() == "console":
         problems.append(
             "EMAIL_PROVIDER is 'console': verification emails would be silently "
-            "discarded. Set EMAIL_PROVIDER=resend with EMAIL_API_KEY and EMAIL_FROM."
+            "discarded. Set EMAIL_PROVIDER=resend or smtp."
         )
+    elif (settings.EMAIL_PROVIDER or "").lower() == "smtp":
+        if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+            problems.append("SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required when EMAIL_PROVIDER=smtp.")
     elif not settings.EMAIL_API_KEY:
         problems.append("EMAIL_API_KEY is required for the configured EMAIL_PROVIDER.")
 

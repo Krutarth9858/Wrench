@@ -55,8 +55,7 @@ export default function MobileBottomNav({ isMechanic }: { isMechanic: boolean })
               end={item.end}
               data-testid={`mobile-nav-${item.label.toLowerCase()}`}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-[3px] w-full transition-colors ${
-                  isActive ? 'text-[#3ECF8E]' : 'text-[#F0F4F2]/45 active:text-[#F0F4F2]/80'
+                `flex flex-col items-center justify-center gap-[3px] w-full transition-colors ${isActive ? 'text-[#3ECF8E]' : 'text-[#F0F4F2]/45 active:text-[#F0F4F2]/80'
                 }`
               }
               style={{ minHeight: TAP + 12 }}

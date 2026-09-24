@@ -67,14 +67,22 @@ export default function MobileLanding() {
           How Wrench works
         </h2>
         {[
-          { icon: <Sparkle weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
-            title: 'Describe the problem', body: 'Wrench AI narrows it down before anyone drives out.' },
-          { icon: <MapPin weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
-            title: 'Match with a mechanic', body: 'Only garages whose service area actually covers you.' },
-          { icon: <Lightning weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
-            title: 'Track it live', body: 'Accepted, on the way, in progress — updated as it happens.' },
-          { icon: <ShieldCheck weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
-            title: 'Or plan ahead', body: 'Book a service at a time you choose and pay securely.' },
+          {
+            icon: <Sparkle weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
+            title: 'Describe the problem', body: 'Wrench AI narrows it down before anyone drives out.'
+          },
+          {
+            icon: <MapPin weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
+            title: 'Match with a mechanic', body: 'Only garages whose service area actually covers you.'
+          },
+          {
+            icon: <Lightning weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
+            title: 'Track it live', body: 'Accepted, on the way, in progress — updated as it happens.'
+          },
+          {
+            icon: <ShieldCheck weight="regular" className="w-[18px] h-[18px] text-[#3ECF8E]" />,
+            title: 'Or plan ahead', body: 'Book a service at a time you choose and pay securely.'
+          },
         ].map((step) => (
           <div key={step.title} className={`${CARD} p-4 flex gap-3.5`}>
             <span className="shrink-0 mt-0.5">{step.icon}</span>

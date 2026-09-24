@@ -105,29 +105,29 @@ const App: React.FC = () => {
                 {/* Simulated App Background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-black rounded-[28px] overflow-hidden">
                   <div className="w-full h-full p-6 md:p-8 flex flex-col justify-end relative">
-                    
+
                     {/* Realistic Mockup Flow */}
                     <div className="space-y-4 mb-24 w-full max-w-md ml-auto transform transition-transform duration-700 group-hover:-translate-y-2">
-                      
+
                       {/* User message */}
                       <div className="bg-zinc-800 rounded-2xl rounded-tr-sm p-4 ml-12 border border-zinc-700/50 shadow-lg">
                         <p className="text-sm text-white font-medium">My bike won't start.</p>
                       </div>
-                      
+
                       {/* AI message */}
                       <div className="bg-emerald-900/40 rounded-2xl rounded-tl-sm p-4 mr-12 border border-emerald-500/20 shadow-lg">
                         <p className="text-sm text-emerald-50 font-medium mb-3">Let's narrow this down. Are the lights turning on?</p>
                         <div className="flex gap-2">
-                           <button className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">Yes, lights work</button>
-                           <button className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">No, completely dead</button>
+                          <button className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">Yes, lights work</button>
+                          <button className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">No, completely dead</button>
                         </div>
                       </div>
-                      
+
                       {/* Diagnostic card */}
                       <div className="glass-panel p-4 mr-12 border border-white/10 shadow-2xl backdrop-blur-md bg-white/5 rounded-2xl">
                         <div className="flex items-center gap-2 mb-2">
-                           <Zap className="w-4 h-4 text-emerald-400" />
-                           <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">Possible Cause</span>
+                          <Zap className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">Possible Cause</span>
                         </div>
                         <p className="text-sm text-white font-medium">Battery / Starter Issue</p>
                       </div>
@@ -146,14 +146,14 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-3 md:gap-4">
-                       <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-emerald-500/50 flex items-center justify-center text-white font-bold">R</div>
-                       <div>
-                         <p className="text-sm text-white font-medium">Raj Auto Care</p>
-                         <p className="text-xs text-emerald-400 font-medium">Available • 2.4 km away</p>
-                       </div>
-                     </div>
-                     <button className="px-4 py-2 bg-white text-zinc-900 text-xs font-bold rounded-full hover:bg-zinc-200 transition-colors">Select</button>
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-emerald-500/50 flex items-center justify-center text-white font-bold">R</div>
+                      <div>
+                        <p className="text-sm text-white font-medium">Raj Auto Care</p>
+                        <p className="text-xs text-emerald-400 font-medium">Available • 2.4 km away</p>
+                      </div>
+                    </div>
+                    <button className="px-4 py-2 bg-white text-zinc-900 text-xs font-bold rounded-full hover:bg-zinc-200 transition-colors">Select</button>
                   </div>
                 </div>
               </div>

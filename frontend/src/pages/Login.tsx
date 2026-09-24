@@ -9,14 +9,14 @@ import AuthDivider from '../components/auth/AuthDivider';
 const WrenchLogin: React.FC = () => {
   const navigate = useNavigate();
   const login = useAuth((state) => state.login);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusField, setFocusField] = useState<'email' | 'password' | null>(null);
-  
+
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -178,7 +178,7 @@ const WrenchLogin: React.FC = () => {
         {/* Right Side: Login Form */}
         <section className="flex-1 flex items-center justify-center p-[clamp(30px,4vw,64px)_clamp(22px,3.4vw,56px)] z-10 relative">
           <div className="relative w-full max-w-[416px] rounded-[26px] p-[clamp(26px,2.6vw,36px)] bg-[#16191A]/70 backdrop-blur-[34px] border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),inset_0_-1px_0_0_rgba(0,0,0,0.45),0_46px_100px_-46px_rgba(0,0,0,0.95)]" style={{ animation: 'v2-rise 760ms cubic-bezier(.16,.9,.2,1) both' }}>
-            
+
             <div className="absolute top-0 left-[18%] right-[18%] h-px overflow-hidden pointer-events-none">
               <div className="w-[40%] h-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(124,231,186,0.95), transparent)', animation: 'v2-sweep 5.5s cubic-bezier(.45,0,.55,1) infinite' }}></div>
             </div>

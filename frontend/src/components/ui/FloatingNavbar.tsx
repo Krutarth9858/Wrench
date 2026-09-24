@@ -18,9 +18,9 @@ export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarPro
     const navigate = useNavigate();
     const location = useLocation();
     const isMechanic = user?.role === 'MECHANIC';
-    const isMapPage = (location.pathname === '/dashboard/find' && !isMechanic) || 
-                      (location.pathname.startsWith('/booking/') && !isMechanic) || 
-                      (location.pathname === '/dashboard' && isMechanic);
+    const isMapPage = (location.pathname === '/dashboard/find' && !isMechanic) ||
+      (location.pathname.startsWith('/booking/') && !isMechanic) ||
+      (location.pathname === '/dashboard' && isMechanic);
     const usePremiumNavbar = isMapPage || isMechanic;
     const isDark = !isMapPage;
 
@@ -42,7 +42,7 @@ export const FloatingNavbar = React.forwardRef<HTMLDivElement, FloatingNavbarPro
           // The profile already carries is_available, so this seeds availability
           // without a second request for it.
           publishAvailability(res.is_available);
-        }).catch(() => {});
+        }).catch(() => { });
       });
     }, [isMechanic, user?.id, publishAvailability]);
 

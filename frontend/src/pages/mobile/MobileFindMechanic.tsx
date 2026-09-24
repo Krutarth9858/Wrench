@@ -194,11 +194,10 @@ export default function MobileFindMechanic() {
                   onClick={() => changeVehicle(type)}
                   data-testid={`m-find-vehicle-${type}`}
                   aria-pressed={vehicleType === type}
-                  className={`rounded-[14px] border text-[14px] font-medium transition-colors ${
-                    vehicleType === type
+                  className={`rounded-[14px] border text-[14px] font-medium transition-colors ${vehicleType === type
                       ? 'border-[#3ECF8E]/60 bg-[#3ECF8E]/12 text-[#3ECF8E]'
                       : 'border-white/10 bg-white/[0.04] text-[#F0F4F2]/70'
-                  }`}
+                    }`}
                   style={{ minHeight: TAP }}
                 >
                   {type === 'BIKE' ? '🛵' : '🚗'} {VEHICLE_TYPE_LABELS[type]}
@@ -217,8 +216,7 @@ export default function MobileFindMechanic() {
         onClick={() => void locate(vehicleType)}
         aria-label="Use my current location"
         data-testid="m-find-locate"
-        className={`absolute right-4 z-[355] items-center justify-center rounded-full border border-white/12 active:bg-white/10 ${
-          sheet === 'expanded' ? 'hidden' : 'flex'}`}
+        className={`absolute right-4 z-[355] items-center justify-center rounded-full border border-white/12 active:bg-white/10 ${sheet === 'expanded' ? 'hidden' : 'flex'}`}
         style={{
           bottom: 168 + NAV_CLEARANCE, width: TAP, height: TAP,
           background: 'rgba(12,13,14,0.9)',
@@ -237,14 +235,14 @@ export default function MobileFindMechanic() {
             <p className="m-0 font-semibold text-[16px] tracking-[-0.01em]">
               {loading ? 'Finding mechanics…'
                 : results.length ? `${results.length} nearby`
-                : locationDenied ? 'Location needed'
-                : 'No mechanics nearby'}
+                  : locationDenied ? 'Location needed'
+                    : 'No mechanics nearby'}
             </p>
             <p className="m-0 mt-0.5 text-[12.5px] text-[#F0F4F2]/45">
               {loading ? 'Searching your area'
                 : results.length ? `${available} available now · ${VEHICLE_TYPE_LABELS[vehicleType]}`
-                : locationDenied ? 'Allow location to find help near you'
-                : 'Try a different vehicle type'}
+                  : locationDenied ? 'Allow location to find help near you'
+                    : 'Try a different vehicle type'}
             </p>
           </div>
         }

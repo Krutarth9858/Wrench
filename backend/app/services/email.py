@@ -71,12 +71,55 @@ class ConsoleMailer:
 
     async def send(self, to: str, subject: str, html: str, text: str) -> None:
         ConsoleMailer.outbox.append(SentEmail(to=to, subject=subject, html=html, text=text))
-        # Body deliberately omitted: it contains the verification code.
         logger.info("email queued to %s: %s", _redact(to), subject)
+        if (settings.ENVIRONMENT or "development").lower() != "production":
+            # In local dev, print the email text so developers can immediately see the OTP
+            print(f"\n{'='*55}\n[LOCAL DEV EMAIL] To: {to}\nSubject: {subject}\n\n{text}\n{'='*55}\n", flush=True)
 
     @classmethod
     def clear(cls) -> None:
         cls.outbox.clear()
+
+
+class SmtpMailer:
+    """Delivers real transactional email via SMTP (e.g., Gmail with an App Password)."""
+
+    name = "smtp"
+
+    def __init__(self, host: str, port: int, user: str, password: str, sender: str, tls: bool = True):
+        self._host = host
+        self._port = port
+        self._user = user
+        self._password = password
+        self._sender = sender
+        self._tls = tls
+
+    async def send(self, to: str, subject: str, html: str, text: str) -> None:
+        import asyncio
+        from email.message import EmailMessage
+        import smtplib
+
+        def _send() -> None:
+            msg = EmailMessage()
+            msg["Subject"] = subject
+            msg["From"] = self._sender
+            msg["To"] = to
+            msg.set_content(text)
+            msg.add_alternative(html, subtype="html")
+
+            with smtplib.SMTP(self._host, self._port, timeout=15) as server:
+                if self._tls:
+                    server.starttls()
+                if self._user and self._password:
+                    server.login(self._user, self._password)
+                server.send_message(msg)
+
+        try:
+            await asyncio.to_thread(_send)
+        except Exception as exc:
+            logger.warning("SMTP failed to deliver message to %s: %s", _redact(to), exc)
+            raise EmailError(f"Could not deliver email via SMTP: {exc}") from exc
+        logger.info("email sent via SMTP to %s: %s", _redact(to), subject)
 
 
 class ResendMailer:
@@ -100,10 +143,10 @@ class ResendMailer:
         except httpx.HTTPError as exc:
             raise EmailError(f"Could not reach the email provider: {exc}") from exc
         if response.status_code >= 400:
-            # Never log the payload — it carries the code.
-            logger.warning("resend rejected a message to %s (%s)",
-                           _redact(to), response.status_code)
-            raise EmailError("The email provider refused this message.")
+            # Never log the payload — it carries the code. Resend error response is safe to log.
+            logger.warning("resend rejected a message to %s (%s): %s",
+                           _redact(to), response.status_code, response.text)
+            raise EmailError(f"The email provider refused this message: {response.text}")
         logger.info("email sent to %s: %s", _redact(to), subject)
 
 
@@ -114,4 +157,15 @@ def get_mailer() -> Mailer:
             # Failing loudly beats silently dropping verification emails.
             raise EmailError("EMAIL_PROVIDER=resend requires EMAIL_API_KEY.")
         return ResendMailer(settings.EMAIL_API_KEY, settings.EMAIL_FROM)
+    if provider == "smtp":
+        if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+            raise EmailError("EMAIL_PROVIDER=smtp requires SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.")
+        return SmtpMailer(
+            host=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            user=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            sender=settings.EMAIL_FROM or settings.SMTP_USER,
+            tls=settings.SMTP_TLS,
+        )
     return ConsoleMailer()

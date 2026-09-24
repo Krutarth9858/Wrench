@@ -57,14 +57,12 @@ export default function MobileMechanicCard({
 
         <div className="mt-2.5 flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              mechanic.is_available
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${mechanic.is_available
                 ? 'bg-[#3ECF8E]/12 text-[#3ECF8E]'
                 : 'bg-white/[0.06] text-[#F0F4F2]/45'
-            }`}
+              }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              mechanic.is_available ? 'bg-[#3ECF8E]' : 'bg-[#F0F4F2]/40'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${mechanic.is_available ? 'bg-[#3ECF8E]' : 'bg-[#F0F4F2]/40'}`} />
             {mechanic.is_available ? 'Available' : 'Unavailable'}
           </span>
           <span className="text-[11px] text-[#F0F4F2]/35 truncate">

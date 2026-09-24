@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     EMAIL_API_KEY: str = ""
     EMAIL_FROM: str = "Wrench <onboarding@resend.dev>"
 
+    # SMTP configuration (e.g. Gmail with an App Password)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
+
     # Email OTP policy. Configured here, never hardcoded at a call site.
     OTP_LENGTH: int = 6
     OTP_EXPIRY_MINUTES: int = 10

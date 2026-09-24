@@ -22,6 +22,18 @@ const PublicOnly: React.FC<{ children: React.ReactElement }> = ({ children }) =>
   return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
+/**
+ * Registration must not use PublicOnly because registering signs the account
+ * in before navigating to /verify-email; PublicOnly would bounce the user
+ * straight to /dashboard before the verification screen can mount.
+ */
+const RegisterRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { user, status } = useAuth();
+  if (status !== 'ready') return <SessionPending />;
+  if (user && user.is_email_verified) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
 /** Everything behind the account lives here. */
 const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { user, status } = useAuth();
@@ -61,9 +73,9 @@ const App: React.FC = () => {
         <Route
           path="/register"
           element={
-            <PublicOnly>
+            <RegisterRoute>
               <ResponsiveRegister />
-            </PublicOnly>
+            </RegisterRoute>
           }
         />
         {/* Full-page booking screen: deliberately outside the dashboard shell so

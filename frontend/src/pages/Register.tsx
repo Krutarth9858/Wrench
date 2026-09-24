@@ -10,7 +10,7 @@ import { requestEmailCode } from '../lib/authExtras';
 const WrenchRegister: React.FC = () => {
   const navigate = useNavigate();
   const registerUser = useAuth((state) => state.register);
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,7 +21,7 @@ const WrenchRegister: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusField, setFocusField] = useState<'email' | 'password' | 'phone_number' | null>(null);
-  
+
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -191,7 +191,7 @@ const WrenchRegister: React.FC = () => {
         {/* Right Side: Register Form */}
         <section className="flex-1 flex items-center justify-center p-[clamp(30px,4vw,64px)_clamp(22px,3.4vw,56px)] z-10 relative mt-8 md:mt-0">
           <div className="relative w-full max-w-[416px] rounded-[26px] p-[clamp(26px,2.6vw,36px)] bg-[#16191A]/70 backdrop-blur-[34px] border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),inset_0_-1px_0_0_rgba(0,0,0,0.45),0_46px_100px_-46px_rgba(0,0,0,0.95)]" style={{ animation: 'v2-rise 760ms cubic-bezier(.16,.9,.2,1) both' }}>
-            
+
             <div className="absolute top-0 left-[18%] right-[18%] h-px overflow-hidden pointer-events-none">
               <div className="w-[40%] h-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(124,231,186,0.95), transparent)', animation: 'v2-sweep 5.5s cubic-bezier(.45,0,.55,1) infinite' }}></div>
             </div>
@@ -203,7 +203,7 @@ const WrenchRegister: React.FC = () => {
               </div>
 
               <form onSubmit={handleRegister} className="flex flex-col gap-[16px]">
-                
+
                 <label className="flex flex-col gap-[8px]" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 200ms both' }}>
                   <span className="font-mono font-medium text-[9px] leading-none tracking-[0.2em] transition-colors duration-300" style={{ color: focusField === 'email' ? '#3ECF8E' : 'rgba(240,244,242,0.45)' }}>EMAIL</span>
                   <div className="relative group">
@@ -256,11 +256,11 @@ const WrenchRegister: React.FC = () => {
                 <div className="flex flex-col gap-[9px] mt-0.5" style={{ animation: 'v2-rise 640ms cubic-bezier(.2,.75,.3,1) 380ms both' }}>
                   <span className="font-mono font-medium text-[9px] leading-none tracking-[0.2em] text-[#F0F4F2]/35">ACCOUNT TYPE</span>
                   <div className="flex gap-[8px]">
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, role: 'CUSTOMER' }))} 
+                    <button type="button" onClick={() => setFormData(p => ({ ...p, role: 'CUSTOMER' }))}
                       className={`flex-1 h-[40px] rounded-[11px] font-normal text-[13px] transition-all duration-200 hover:border-white/25
                         ${formData.role === 'CUSTOMER' ? 'text-[#052018] border-[#3ECF8E]/90 bg-[#3ECF8E]/90' : 'text-[#F0F4F2]/60 border-white/10 bg-white/5'}
                       `}>Customer</button>
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, role: 'MECHANIC' }))} 
+                    <button type="button" onClick={() => setFormData(p => ({ ...p, role: 'MECHANIC' }))}
                       className={`flex-1 h-[40px] rounded-[11px] font-normal text-[13px] transition-all duration-200 hover:border-white/25
                         ${formData.role === 'MECHANIC' ? 'text-[#052018] border-[#3ECF8E]/90 bg-[#3ECF8E]/90' : 'text-[#F0F4F2]/60 border-white/10 bg-white/5'}
                       `}>Mechanic</button>
