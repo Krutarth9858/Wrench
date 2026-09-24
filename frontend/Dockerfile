@@ -1,5 +1,5 @@
 # Stage 1: Build the Vite + React TypeScript single page application
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -7,8 +7,8 @@ WORKDIR /app
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+COPY package.json package-lock.json* ./
+RUN npm install --legacy-peer-deps --ignore-scripts
 
 COPY . .
 RUN npm run build
